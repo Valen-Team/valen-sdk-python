@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "contract_tests": 28,
+  "packaged_distribution_tests_passed": true,
+  "credential_scan_passed": true,
+  "real_model": {
+    "passed": true,
+    "python": {
+      "version": "0.2.0",
+      "probability": 0.9887207828195224,
+      "real_model": true,
+      "download": false
+    },
+    "python_cached_development_baseline": {
+      "version": "0.2.0.dev1",
+      "probability": 0.9887207828195224,
+      "real_model": true,
+      "download": false
+    },
+    "python_baseline_probability_matches": true,
+    "javascript": {
+      "probability": 0.9887207828195224,
+      "real_model": true,
+      "download": false
+    },
+    "model": "cached qualified 0.8B ONNX fp32",
+    "scope": "new stable distribution text smoke on Linux CPU; existing media/CUDA/WebGPU validation reused without rerunning",
+    "network_model_bytes": 0
+  },
+  "artifacts": {
+    "valen_sdk-0.2.0-py3-none-any.whl": {
+      "bytes": 36707,
+      "sha256": "41817999096f9eadbad7157247995c4c76af1e27f1c1a8d65bb6190d3db4b440"
+    },
+    "valen_sdk-0.2.0.tar.gz": {
+      "bytes": 805216,
+      "sha256": "963774e3e1844362ba10aa5522ed258a9c03296357927c23e20039bf6d186ebb"
+    }
+  },
+  "registry_status": "not published; no registry authorization available",
+  "prior_media_validation": "reused existing validation/onnx-v2/sdk-onboarding-review.json; not rerun or generalized to new platforms"
+}

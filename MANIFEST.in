@@ -2,3 +2,5 @@ include README.md README_zh.md LICENSE THIRD_PARTY_NOTICES.md
 recursive-include tests *.py
 recursive-include examples *.py
 recursive-include assets/branding *.png
+include CHANGELOG.md RELEASING.md
+prune src/build

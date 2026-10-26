@@ -18,12 +18,28 @@
 
 在自己的 Python 应用中处理文本、图片和视频，获取可直接用于工单路由、内容筛选与排序的类别、是非概率和评分。支持 CPU 本地推理、NVIDIA CUDA 和远程 HTTP 调用；本地推理使用 ONNX Runtime，无需安装 PyTorch 或 Transformers。
 
+## 稳定版本 0.2.0
+
+GitHub 稳定发布安装（不代表已发布到 PyPI/npm）：
+
+```sh
+python -m pip install 'valen-sdk[onnx] @ https://github.com/Valen-Team/valen-sdk-python/releases/download/v0.2.0/valen_sdk-0.2.0-py3-none-any.whl'
+```
+
+注册表发布仍需维护者配置权限；仅在注册表可查到 0.2.0 后使用：
+
+```sh
+python -m pip install 'valen-sdk[onnx]==0.2.0'
+```
+
+首次体验优先使用[网页或免费 API](https://valen-team.github.io/)。完整[版本选择](https://valen-team.github.io/zh-Hans/docs/valen/choosing/)。
+
 ## 快速开始
 
 本地推理需要 Python 3.11+ 和 Git。下面使用 CPU，无需 GPU：
 
 ```bash
-git clone https://github.com/valen-team/valen-sdk-python.git
+git clone --branch v0.2.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
 cd valen-sdk-python
 python -m pip install ".[onnx]"
 python examples/local_decisions.py
@@ -69,7 +85,7 @@ Explicitness score (0–2): 1.921
 在自己的项目中，可直接安装 SDK：
 
 ```bash
-python -m pip install "valen-sdk[onnx] @ git+https://github.com/valen-team/valen-sdk-python.git"
+python -m pip install "valen-sdk[onnx] @ git+https://github.com/valen-team/valen-sdk-python.git@v0.2.0"
 ```
 
 ## 图片和视频

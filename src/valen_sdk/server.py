@@ -18,7 +18,7 @@ def create_app(model, *, api_key=None, allow_local_media=False, **model_options)
         yield
         client.close()
 
-    app = FastAPI(title="Valen Decisions API", version="0.2.0.dev1", lifespan=lifespan)
+    app = FastAPI(title="Valen Decisions API", version="0.2.0", lifespan=lifespan)
     app.state.valen = client
 
     @app.middleware("http")
