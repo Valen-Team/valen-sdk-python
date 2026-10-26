@@ -1,11 +1,15 @@
-# Releasing 0.2.0
+# Publishing Python SDK
 
-Publication status: GitHub artifact release; PyPI/npm not yet published. Package names were absent from their registries at preflight. No registry credentials, repository publishing secrets or existing trusted-publishing workflows were found. GitHub/HF credentials must not be reused for package registries.
+`valen-sdk==0.2.0` was published to [PyPI](https://pypi.org/project/valen-sdk/0.2.0/) on 2026-10-26 using the account-configured Trusted Publisher. Build, wheel/sdist metadata checks and OIDC publication passed in [the workflow](https://github.com/Valen-Team/valen-sdk-python/actions/runs/40286898341). PyPI files, SHA256, installed wheel tests and source equivalence are recorded in `validation/pypi-0.2.0.json`. GitHub distribution hashes are recorded separately because archive metadata can differ between builds.
 
-Verify the GitHub release SHA256SUMS before installation. Tests cover HTTP contracts, errors, retries, assets, lifecycle and preprocessing. Existing real-model validation is reused; package smoke tests do not establish new backend/platform support.
+## Configuration
 
-Python: configure a PyPI Trusted Publisher for Valen-Team/valen-sdk-python, workflow `publish.yml`, environment `pypi`, or use a scoped PyPI token outside Git. Run the manual workflow after configuring the publisher. The environment must exist and should require maintainer review. The workflow builds and checks wheel/sdist, then uses OIDC; it does not run on ordinary push.
+PyPI publisher: project `valen-sdk`, GitHub owner `Valen-Team`, repository `valen-sdk-python`, workflow `publish.yml`, environment `pypi`. The GitHub environment exists. A pending publisher creates the project on its first successful publication. No long-lived PyPI token is required; do not reuse GitHub/HF tokens for the registry.
 
-JavaScript: an authorized npm account must own/create @valen scope and have publish rights for @valen/sdk. From a clean v0.2.0 checkout run `npm test`, `npm run typecheck`, `npm pack --dry-run`, then `npm publish --access public` with the account's authorized authentication/2FA. No npm credential is stored in this repository. Optionally configure npm trusted publishing in npm after establishing package ownership.
+The workflow is manually dispatched and currently builds the pinned `v0.2.0` tag. For a future version, update package versions/changelog, run appropriate tests, create its reviewed tag, then update the checkout ref in `.github/workflows/publish.yml` before dispatch. Never overwrite an existing PyPI version or move a published tag. Keep the workflow name and environment aligned with PyPI, and configure environment reviewer protection as appropriate.
 
-After publication query `https://pypi.org/pypi/valen-sdk/0.2.0/json` and `https://registry.npmjs.org/@valen%2fsdk/0.2.0`, compare filenames/digests, perform a clean small-package install with optional model dependencies disabled, and update README and release notes to reflect actual registry availability.
+## Verification
+
+Query `https://pypi.org/pypi/valen-sdk/VERSION/json`; check the actual version, file inventory and SHA256. Install the small wheel in isolation with model extras disabled, then run contract tests. Reuse cached model assets for real inference checks. Update the README, release notes and website only after registry publication is verified.
+
+The JavaScript SDK's npm publication is independent and remains pending its own authorization; see the JavaScript repository's RELEASING.md.

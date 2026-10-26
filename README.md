@@ -20,23 +20,21 @@ Run text, image and video decisions inside your Python application. Get categori
 
 ## Stable version 0.2.0
 
-Install the GitHub stable release (this does not mean publication on PyPI/npm):
+Published on [PyPI](https://pypi.org/project/valen-sdk/0.2.0/). Install the base package for HTTP clients, or the ONNX extra for local inference:
 
 ```sh
-python -m pip install 'valen-sdk[onnx] @ https://github.com/Valen-Team/valen-sdk-python/releases/download/v0.2.0/valen_sdk-0.2.0-py3-none-any.whl'
-```
-
-Registry publication still requires maintainer permissions. Only after 0.2.0 appears in the registry, use:
-
-```sh
+python -m pip install 'valen-sdk==0.2.0'
+# Local CPU inference, Python 3.11+
 python -m pip install 'valen-sdk[onnx]==0.2.0'
 ```
+
+The [GitHub stable artifacts](https://github.com/Valen-Team/valen-sdk-python/releases/tag/v0.2.0) remain available. PyPI publication uses GitHub Trusted Publishing without a long-lived PyPI token; see [releasing](RELEASING.md). JavaScript SDK npm availability is tracked separately.
 
 For a first try, use the [web experience or free API](https://valen-team.github.io/). See [version selection](https://valen-team.github.io/docs/valen/choosing/).
 
 ## Quick start
 
-Local inference needs Python 3.11+ and Git. This example runs on CPU; no GPU is required:
+The repository example below needs Python 3.11+ and Git. It runs on CPU; no GPU is required. Installing the PyPI wheel itself does not require Git:
 
 ```bash
 git clone --branch v0.2.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
@@ -85,7 +83,7 @@ The first run downloads and caches the selected variant; the full 0.8B FP32 down
 To install the SDK directly in your own project:
 
 ```bash
-python -m pip install "valen-sdk[onnx] @ git+https://github.com/valen-team/valen-sdk-python.git@v0.2.0"
+python -m pip install "valen-sdk[onnx]==0.2.0"
 ```
 
 ## Images and video

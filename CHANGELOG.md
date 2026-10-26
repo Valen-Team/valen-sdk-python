@@ -6,4 +6,4 @@ First stable GitHub release of the modular ONNX and HTTP SDK. Promotes the 0.2.0
 
 Compatibility: Python HTTP requires 3.10+; local ONNX requires 3.11+ and ONNX Runtime 1.31+. JavaScript requires Node.js 20+; the measured Node backend uses ONNX Runtime 1.30.0; browser inference uses the explicitly pinned development WebGPU runtime. Stable SDK version does not make this browser dependency stable. ONNX format_version=2, contract_version=valen-decisions-1. GGUF is served through HTTP, not Valen.local. See README for optional dependencies and backend-specific scope.
 
-The GitHub release is independently installable. PyPI/npm publication is pending registry authorization; do not infer registry availability from a Git tag or CI build.
+Published to PyPI as `valen-sdk==0.2.0` on 2026-10-26 through GitHub Trusted Publishing. The wheel and sdist registry metadata were checked; the downloaded 36.7 KB wheel passed SHA256 verification, matched the GitHub release Python source, installed offline without dependency downloads, and passed all 28 contract tests. See `validation/pypi-0.2.0.json`. JavaScript npm publication remains separate.

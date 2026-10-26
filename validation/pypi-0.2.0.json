@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "name": "valen-sdk",
+  "version": "0.2.0",
+  "url": "https://pypi.org/project/valen-sdk/0.2.0/",
+  "workflow": "https://github.com/Valen-Team/valen-sdk-python/actions/runs/40286898341",
+  "trusted_publishing": true,
+  "files": [
+    {
+      "name": "valen_sdk-0.2.0-py3-none-any.whl",
+      "bytes": 36704,
+      "sha256": "7229cd960de86054285cd4fc0f8a9e3c084e798e75a5a9045041d7ee8a431b6b",
+      "url": "https://files.pythonhosted.org/packages/19/cf/31e8687add4370cae20d13c0771d3f38dda37e9955980e57b6e0b061f74d/valen_sdk-0.2.0-py3-none-any.whl"
+    },
+    {
+      "name": "valen_sdk-0.2.0.tar.gz",
+      "bytes": 804964,
+      "sha256": "7bd2ec0f1e043f2ded3ac7e27b924a09d01d3755124b21dd7fbbac8a667a5fac",
+      "url": "https://files.pythonhosted.org/packages/33/f2/ce279a8542e409e21454521d03ecede67d6e85bb39e0bd026b0a37b98803/valen_sdk-0.2.0.tar.gz"
+    }
+  ],
+  "python_source_matches_github_release": true,
+  "wheel_installed_offline_after_hash_check": true,
+  "installed_wheel_tests": "............................                                             [100%]\n28 passed in 0.62s",
+  "large_models_or_dependencies_downloaded": false,
+  "client_wheel_bytes": 36704
+}
