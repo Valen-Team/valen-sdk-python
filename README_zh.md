@@ -18,6 +18,11 @@
 
 在自己的 Python 应用中处理文本、图片和视频，获取可直接用于工单路由、内容筛选与排序的类别、是非概率和评分。支持 CPU 本地推理、NVIDIA CUDA 和远程 HTTP 调用；本地推理使用 ONNX Runtime，无需安装 PyTorch 或 Transformers。
 
+## 完整应用教程
+
+完整业务流程只在[官网 Cookbook](https://valen-team.github.io/zh-Hans/cookbook/)维护：[工单分流](https://valen-team.github.io/zh-Hans/cookbook/ticket-routing/)、[商品图片筛选](https://valen-team.github.io/zh-Hans/cookbook/product-screening/)、[短视频标注](https://valen-team.github.io/zh-Hans/cookbook/video-tagging/)。代码、样例和实测结果来自同一维护源。本仓库保留 SDK 接口与安装示例；`Valen.local` 是 ONNX 路径，GGUF 服务使用远程 HTTP 客户端。C++ 集成的支持范围以本仓库说明为准。
+
+
 ## 稳定版本 0.2.0
 
 已正式发布到 [PyPI](https://pypi.org/project/valen-sdk/0.2.0/)。仅调用 HTTP 服务可安装基础包；本地 ONNX 推理安装对应 extra：
@@ -43,40 +48,17 @@ python -m pip install ".[onnx]"
 python examples/local_decisions.py
 ```
 
-首个示例的完整代码：
+最短协议调用如下，完整分流、阈值和排序见 Cookbook：
 
 ```python
 from valen_sdk import Valen
 
 with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
-    result = client.decisions(
-        input="I moved. Please ship my order to 12 Elm Street instead.",
-        questions=[
-            {"name": "intent", "type": "choice", "instructions": "What does the customer want?",
-             "choices": [{"value": "address", "description": "Change the delivery address"},
-                         {"value": "cancel", "description": "Cancel the order"}]},
-            {"name": "change_address", "type": "predicate",
-             "instructions": "The customer requests a delivery address change."},
-            {"name": "explicitness", "type": "score", "instructions": "How explicit is the request?",
-             "levels": [{"label": "none", "description": "No request"},
-                        {"label": "possible", "description": "Asks whether a change is possible"},
-                        {"label": "explicit", "description": "Explicitly requests a change"}]},
-        ],
-    )
-    print("Intent:", result.by_name("intent").choice)
-    print(f"Address change probability: {result.by_name('change_address').probability:.3f}")
-    print(f"Explicitness score (0–2): {result.by_name('explicitness').score:.3f}")
+    result = client.decisions(input="A cat is on the sofa.", questions=[
+        {"name": "cat", "type": "predicate", "instructions": "A cat is present."},
+    ])
+    print(result.by_name("cat").probability)
 ```
-
-0.8B FP32 示例输出：
-
-```text
-Intent: address
-Address change probability: 0.998
-Explicitness score (0–2): 1.921
-```
-
-类别用于选择处理分支；是非概率范围为 0–1；示例评分范围为 0–2。一个输入可以同时提出多个问题。具体数值会随运行精度变化。
 
 首次使用会下载所选模型变体并缓存；0.8B FP32 完整下载约 3.51 GB。后续运行复用缓存。模型选择、下载量和实测内存见 [0.8B](https://huggingface.co/Valen-Team/Valen-0.8B-ONNX)、[2B](https://huggingface.co/Valen-Team/Valen-2B-ONNX)、[4B](https://huggingface.co/Valen-Team/Valen-4B-ONNX) 模型卡。
 
@@ -88,24 +70,7 @@ python -m pip install "valen-sdk[onnx]==0.2.0"
 
 ## 图片和视频
 
-以下命令在本仓库根目录运行。每个脚本自行创建并关闭客户端，可以独立执行。
-
-图片：
-
-```bash
-curl -L https://raw.githubusercontent.com/Valen-Team/Valen/main/assets/cookbook/sheep.jpg -o sheep.jpg
-python examples/media.py sheep.jpg
-```
-
-视频需额外安装解码依赖；示例采样四帧：
-
-```bash
-python -m pip install ".[onnx,video]"
-curl -L https://raw.githubusercontent.com/Valen-Team/Valen/main/assets/cookbook/momos.mp4 -o momos.mp4
-python examples/media.py momos.mp4 --video
-```
-
-查看 [媒体示例源码](examples/media.py) 了解 `input_image` / `input_video` 消息格式。本地路径相对于运行目录解析。
+本地媒体接口的最短示例保留在 `examples/`；完整输入、依赖、运行命令、结果与不确定性处理统一见[图片筛选](https://valen-team.github.io/zh-Hans/cookbook/product-screening/)、[短视频标注](https://valen-team.github.io/zh-Hans/cookbook/video-tagging/)和[直接视频基础](https://valen-team.github.io/zh-Hans/cookbook/local-inference/)。共享素材 `Valen/assets/cookbook/` 的 URL 保持不变。
 
 ## 本地 HTTP 服务
 

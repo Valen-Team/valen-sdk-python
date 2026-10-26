@@ -18,6 +18,11 @@
 
 Run text, image and video decisions inside your Python application. Get categories, yes/no probabilities and scores for ticket routing, content screening and ranking. Use local CPU inference, NVIDIA CUDA or a remote HTTP service. Local inference uses ONNX Runtime without PyTorch or Transformers.
 
+## Complete application tutorials
+
+Complete workflows are maintained in the [official Cookbook](https://valen-team.github.io/cookbook/): [ticket routing](https://valen-team.github.io/cookbook/ticket-routing/), [product-image screening](https://valen-team.github.io/cookbook/product-screening/) and [video tagging](https://valen-team.github.io/cookbook/video-tagging/). Code, samples and measured outputs share one source. This repository retains SDK interface and installation examples. `Valen.local` loads ONNX; connect to GGUF services over HTTP. C++ support remains scoped by this repository's reference.
+
+
 ## Stable version 0.2.0
 
 Published on [PyPI](https://pypi.org/project/valen-sdk/0.2.0/). Install the base package for HTTP clients, or the ONNX extra for local inference:
@@ -43,40 +48,17 @@ python -m pip install ".[onnx]"
 python examples/local_decisions.py
 ```
 
-The complete first example:
+A minimal protocol call follows; the Cookbook owns routing, thresholds and ranking:
 
 ```python
 from valen_sdk import Valen
 
 with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
-    result = client.decisions(
-        input="I moved. Please ship my order to 12 Elm Street instead.",
-        questions=[
-            {"name": "intent", "type": "choice", "instructions": "What does the customer want?",
-             "choices": [{"value": "address", "description": "Change the delivery address"},
-                         {"value": "cancel", "description": "Cancel the order"}]},
-            {"name": "change_address", "type": "predicate",
-             "instructions": "The customer requests a delivery address change."},
-            {"name": "explicitness", "type": "score", "instructions": "How explicit is the request?",
-             "levels": [{"label": "none", "description": "No request"},
-                        {"label": "possible", "description": "Asks whether a change is possible"},
-                        {"label": "explicit", "description": "Explicitly requests a change"}]},
-        ],
-    )
-    print("Intent:", result.by_name("intent").choice)
-    print(f"Address change probability: {result.by_name('change_address').probability:.3f}")
-    print(f"Explicitness score (0–2): {result.by_name('explicitness').score:.3f}")
+    result = client.decisions(input="A cat is on the sofa.", questions=[
+        {"name": "cat", "type": "predicate", "instructions": "A cat is present."},
+    ])
+    print(result.by_name("cat").probability)
 ```
-
-Example output with 0.8B FP32:
-
-```text
-Intent: address
-Address change probability: 0.998
-Explicitness score (0–2): 1.921
-```
-
-Use the category to route a request, the 0–1 probability to select requests for review, and the 0–2 score to rank them. Ask multiple questions about one input. Exact values can vary with compute precision.
 
 The first run downloads and caches the selected variant; the full 0.8B FP32 download is about 3.51 GB. Later runs reuse the cache. See the [0.8B](https://huggingface.co/Valen-Team/Valen-0.8B-ONNX), [2B](https://huggingface.co/Valen-Team/Valen-2B-ONNX) and [4B](https://huggingface.co/Valen-Team/Valen-4B-ONNX) cards for model selection, downloads and measured memory.
 
@@ -88,24 +70,7 @@ python -m pip install "valen-sdk[onnx]==0.2.0"
 
 ## Images and video
 
-Run these commands from this repository's root. Each script creates and closes its own client and can run independently.
-
-Image:
-
-```bash
-curl -L https://raw.githubusercontent.com/Valen-Team/Valen/main/assets/cookbook/sheep.jpg -o sheep.jpg
-python examples/media.py sheep.jpg
-```
-
-Add the video decoder for video inputs. This example samples four frames:
-
-```bash
-python -m pip install ".[onnx,video]"
-curl -L https://raw.githubusercontent.com/Valen-Team/Valen/main/assets/cookbook/momos.mp4 -o momos.mp4
-python examples/media.py momos.mp4 --video
-```
-
-See [the media example](examples/media.py) for `input_image` / `input_video` messages. Relative file paths resolve against the working directory.
+Minimal local media interface examples remain in `examples/`. Complete inputs, dependencies, commands, outputs and uncertainty handling live in [product screening](https://valen-team.github.io/cookbook/product-screening/), [video tagging](https://valen-team.github.io/cookbook/video-tagging/) and [direct-video basics](https://valen-team.github.io/cookbook/local-inference/). Shared `Valen/assets/cookbook/` URLs remain stable.
 
 ## Local HTTP service
 
