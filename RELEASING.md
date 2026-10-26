@@ -12,4 +12,4 @@ The workflow is manually dispatched and currently builds the pinned `v0.2.0` tag
 
 Query `https://pypi.org/pypi/valen-sdk/VERSION/json`; check the actual version, file inventory and SHA256. Install the small wheel in isolation with model extras disabled, then run contract tests. Reuse cached model assets for real inference checks. Update the README, release notes and website only after registry publication is verified.
 
-The JavaScript SDK's npm publication is independent and remains pending its own authorization; see the JavaScript repository's RELEASING.md.
+The JavaScript SDK is independently published on npm as `@valen-team/sdk@0.2.0`; see the JavaScript repository's RELEASING.md.
