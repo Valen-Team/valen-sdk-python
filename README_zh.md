@@ -173,3 +173,5 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", local_files_only=True) as client:
 [JavaScript / 浏览器 SDK](https://github.com/valen-team/valen-sdk-js) · [C++ 文本集成示例](https://github.com/valen-team/valen-sdk-cpp) · [免费 API 文档](https://valen-team.github.io/docs/valen/api/)
 
 Apache-2.0。见 [LICENSE](LICENSE) 和 [第三方许可](THIRD_PARTY_NOTICES.md)。
+
+用户指南唯一维护在官网：[Documentation](https://valen-team.github.io/zh-Hans/docs/) · [Fine-tuning](https://valen-team.github.io/zh-Hans/docs/valen/training/) · [Probabilities](https://valen-team.github.io/zh-Hans/docs/valen/probabilities/) · [Cookbook](https://valen-team.github.io/zh-Hans/cookbook/).
