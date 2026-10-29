@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 — unreleased
+## 0.3.0 — 2026-10-29
 
 Adds `Valen.llm(provider, model)`: the same Decisions and SystemOne requests answered by an OpenAI-compatible, Anthropic or Gemini model, returning the same typed responses for side-by-side comparison. Records token usage across retries, latency and every provider attempt in `debug["llm_attempts"]`; corrects malformed output; reports truncation and refusals as `ValenAPIError` with `error.debug`. Video frames are sent as images. `valen-sdk[video]` now includes Pillow. `Usage` token counts may be `None` when a provider omits them. No new base dependencies.
 

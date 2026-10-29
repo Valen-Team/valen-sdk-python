@@ -6,7 +6,7 @@
 
 PyPI publisher: project `valen-sdk`, GitHub owner `Valen-Team`, repository `valen-sdk-python`, workflow `publish.yml`, environment `pypi`. The GitHub environment exists. A pending publisher creates the project on its first successful publication. No long-lived PyPI token is required; do not reuse GitHub/HF tokens for the registry.
 
-The workflow is manually dispatched and currently builds the pinned `v0.2.0` tag. For a future version, update package versions/changelog, run appropriate tests, create its reviewed tag, then update the checkout ref in `.github/workflows/publish.yml` before dispatch. Never overwrite an existing PyPI version or move a published tag. Keep the workflow name and environment aligned with PyPI, and configure environment reviewer protection as appropriate.
+The workflow is manually dispatched and currently builds the pinned `v0.3.0` tag. For a future version, update package versions/changelog, run appropriate tests, create its reviewed tag, then update the checkout ref in `.github/workflows/publish.yml` before dispatch. Never overwrite an existing PyPI version or move a published tag. Keep the workflow name and environment aligned with PyPI, and configure environment reviewer protection as appropriate.
 
 ## Verification
 
