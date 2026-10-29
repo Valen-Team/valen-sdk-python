@@ -95,7 +95,7 @@ with Valen.remote("http://127.0.0.1:8000/v1", model="valen") as client:
     print("Address change probability:", result.by_name("change_address").probability)
 ```
 
-已有 Valen 服务时，仅安装 SDK 基础包即可使用 HTTP 客户端，无需安装 ONNX Runtime。`Valen.remote` 的地址以 `/v1` 结尾；服务端启用鉴权时传入 `api_key`。`AsyncValen` 提供异步 HTTP 客户端。
+已有 Valen 服务时，仅安装 SDK 基础包即可使用 HTTP 客户端，无需安装 ONNX Runtime。`Valen.remote` 的地址以 `/v1` 结尾；服务端启用鉴权时传入 `api_key`。`AsyncValen` 提供异步 HTTP 客户端，参数 `api_key`、`timeout`、`max_retries` 和 `headers` 与同步客户端相同。失败时抛出 `ValenAPIError`，带有 `status_code`、`request_id` 和服务端返回的错误信息。
 
 ## SystemOne
 

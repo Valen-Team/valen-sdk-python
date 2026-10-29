@@ -48,6 +48,66 @@ def test_retry_and_errors(status, expected, monkeypatch):
     assert len(calls) == expected
 
 
+def test_non_json_error_page_keeps_status_and_text(monkeypatch):
+    monkeypatch.setattr("valen_sdk.client.time.sleep", lambda _: None)
+    page = lambda _: httpx.Response(502, text="<html>502 Bad Gateway</html>", headers={"x-request-id": "request-2"})
+    with Valen.remote("https://example.test/v1", transport=httpx.MockTransport(page)) as client:
+        with pytest.raises(ValenAPIError, match="Bad Gateway") as exc:
+            client.system_one("red", {})
+    assert (exc.value.status_code, exc.value.request_id) == (502, "request-2")
+    assert isinstance(exc.value.__cause__, ValueError)
+
+
+def test_user_agent_names_the_sdk_version():
+    from valen_sdk import __version__
+    seen = []
+    def handle(request):
+        seen.append(request.headers["user-agent"])
+        return httpx.Response(200, json=response())
+    with Valen.remote("https://example.test/v1", transport=httpx.MockTransport(handle)) as client:
+        client.decisions(input="red", questions=[])
+    assert seen == ["valen-sdk-python/" + __version__]
+
+
+@pytest.mark.parametrize("status,expected", [(401, 1), (503, 3)])
+def test_async_retry_and_errors(status, expected, monkeypatch):
+    async def no_sleep(_):
+        pass
+    monkeypatch.setattr("valen_sdk.client.asyncio.sleep", no_sleep)
+    calls = []
+    def handle(request):
+        calls.append(request)
+        return httpx.Response(status, json={"error": "failure"}, headers={"x-request-id": "request-1"})
+    async def run():
+        async with AsyncValen("https://example.test/v1", transport=httpx.MockTransport(handle)) as client:
+            with pytest.raises(ValenAPIError, match="failure") as exc:
+                await client.decisions(input="red", questions=[])
+            assert (exc.value.status_code, exc.value.request_id) == (status, "request-1")
+    asyncio.run(run())
+    assert len(calls) == expected
+
+
+def test_dropped_connections_are_retried_then_wrapped(monkeypatch):
+    monkeypatch.setattr("valen_sdk.client.time.sleep", lambda _: None)
+    async def no_sleep(_):
+        pass
+    monkeypatch.setattr("valen_sdk.client.asyncio.sleep", no_sleep)
+    calls = []
+    def drop(request):
+        calls.append(request)
+        raise httpx.RemoteProtocolError("Server disconnected", request=request)
+    with Valen.remote("https://example.test/v1", transport=httpx.MockTransport(drop)) as client:
+        with pytest.raises(ValenAPIError) as exc:
+            client.system_one("red", {})
+    assert isinstance(exc.value.__cause__, httpx.RemoteProtocolError)
+    async def run():
+        async with AsyncValen("https://example.test/v1", transport=httpx.MockTransport(drop)) as client:
+            with pytest.raises(ValenAPIError):
+                await client.decisions(input="red", questions=[])
+    asyncio.run(run())
+    assert len(calls) == 6
+
+
 def test_async_http():
     async def run():
         async with AsyncValen("https://example.test/v1", transport=httpx.MockTransport(lambda _: httpx.Response(200, json=response()))) as client:

@@ -95,7 +95,7 @@ with Valen.remote("http://127.0.0.1:8000/v1", model="valen") as client:
     print("Address change probability:", result.by_name("change_address").probability)
 ```
 
-For an existing Valen service, install just the base SDK; the HTTP client does not need ONNX Runtime. The `Valen.remote` URL ends in `/v1`; pass `api_key` when the server uses authentication. `AsyncValen` provides an asynchronous HTTP client.
+For an existing Valen service, install just the base SDK; the HTTP client does not need ONNX Runtime. The `Valen.remote` URL ends in `/v1`; pass `api_key` when the server uses authentication. `AsyncValen` provides an asynchronous HTTP client with the same `api_key`, `timeout`, `max_retries` and `headers` options. Failures raise `ValenAPIError` with `status_code`, `request_id` and the service's error detail.
 
 ## SystemOne
 

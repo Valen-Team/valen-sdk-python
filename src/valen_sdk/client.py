@@ -1,11 +1,41 @@
 """One business interface with local ONNX, remote HTTP and LLM comparison backends."""
 
+import asyncio
 import time
 from pydantic import BaseModel
 import httpx
 
+from . import __version__
 from .errors import ValenAPIError
 from .types import DecisionResponse, SystemOneResponse
+
+RETRYABLE = {429, 502, 503, 504}
+
+
+def _headers(api_key, headers):
+    return {"User-Agent": "valen-sdk-python/" + __version__,
+            **({"Authorization": "Bearer " + api_key} if api_key else {}), **(headers or {})}
+
+
+def _backoff(attempt):
+    return min(0.25 * 2**attempt, 2)
+
+
+def _result(response):
+    """The JSON body, or ValenAPIError with the status, request ID and the service's detail."""
+    request_id = response.headers.get("x-request-id")
+    try:
+        result = response.json()
+    except ValueError as exc:
+        raise ValenAPIError(
+            f"Valen returned HTTP {response.status_code} without JSON: {response.text[:200]}",
+            status_code=response.status_code,
+            request_id=request_id,
+        ) from exc
+    if response.is_error:
+        detail = result.get("error", result.get("detail", "Valen request failed")) if isinstance(result, dict) else result
+        raise ValenAPIError(str(detail), status_code=response.status_code, request_id=request_id)
+    return result
 
 
 def _body(state, questions, options):
@@ -92,7 +122,7 @@ class HTTPBackend:
         self.client = httpx.Client(
             base_url=base_url.rstrip("/") + "/",
             timeout=timeout,
-            headers={**({"Authorization": "Bearer " + api_key} if api_key else {}), **(headers or {})},
+            headers=_headers(api_key, headers),
             transport=transport,
         )
 
@@ -104,27 +134,15 @@ class HTTPBackend:
         for attempt in range(self.max_retries + 1):
             try:
                 response = self.client.post(path, json=body)
-            except (httpx.ConnectError, httpx.TimeoutException) as exc:
+            except httpx.TransportError as exc:
                 if attempt == self.max_retries:
                     raise ValenAPIError("Unable to reach Valen service") from exc
-                time.sleep(min(0.25 * 2**attempt, 2))
+                time.sleep(_backoff(attempt))
                 continue
-            if response.status_code in {429, 502, 503, 504} and attempt < self.max_retries:
-                time.sleep(min(0.25 * 2**attempt, 2))
+            if response.status_code in RETRYABLE and attempt < self.max_retries:
+                time.sleep(_backoff(attempt))
                 continue
-            if response.is_error:
-                try:
-                    detail = response.json().get(
-                        "error", response.json().get("detail", "Valen request failed")
-                    )
-                except ValueError:
-                    detail = "Valen request failed"
-                raise ValenAPIError(
-                    str(detail),
-                    status_code=response.status_code,
-                    request_id=response.headers.get("x-request-id"),
-                )
-            return response.json()
+            return _result(response)
 
     def close(self):
         self.closed = True
@@ -134,29 +152,33 @@ class HTTPBackend:
 class AsyncValen:
     """Asynchronous HTTP client; local inference uses the synchronous Valen API."""
 
-    def __init__(self, base_url, *, api_key=None, model=None, timeout=120.0, transport=None):
-        self.model = model
+    def __init__(
+        self, base_url, *, api_key=None, model=None, timeout=120.0, max_retries=2, transport=None, headers=None
+    ):
+        if type(max_retries) is not int or max_retries < 0:
+            raise ValueError("max_retries must be nonnegative")
+        self.model, self.max_retries = model, max_retries
         self.client = httpx.AsyncClient(
             base_url=base_url.rstrip("/") + "/",
             timeout=timeout,
-            headers={"Authorization": "Bearer " + api_key} if api_key else {},
+            headers=_headers(api_key, headers),
             transport=transport,
         )
 
     async def _post(self, path, body):
-        try:
-            response = await self.client.post(
-                path, json={**({"model": self.model} if self.model else {}), **body}
-            )
-        except httpx.HTTPError as exc:
-            raise ValenAPIError("Unable to reach Valen service") from exc
-        if response.is_error:
-            raise ValenAPIError(
-                "Valen request failed",
-                status_code=response.status_code,
-                request_id=response.headers.get("x-request-id"),
-            )
-        return response.json()
+        body = {**({"model": self.model} if self.model else {}), **body}
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = await self.client.post(path, json=body)
+            except httpx.TransportError as exc:
+                if attempt == self.max_retries:
+                    raise ValenAPIError("Unable to reach Valen service") from exc
+                await asyncio.sleep(_backoff(attempt))
+                continue
+            if response.status_code in RETRYABLE and attempt < self.max_retries:
+                await asyncio.sleep(_backoff(attempt))
+                continue
+            return _result(response)
 
     async def decisions(self, *, input, questions, **options):
         return DecisionResponse.model_validate(

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 — unreleased
+
+- `AsyncValen` retries rate limits, overload and connection failures like `Valen.remote`, takes `max_retries` and `headers`, and raises `ValenAPIError` with the service's error detail.
+- A non-JSON response, such as a gateway's HTML 502, raises `ValenAPIError` with its status code, request ID and text.
+- A connection dropped mid-response (`ReadError`, `RemoteProtocolError`) is retried like a connection failure and then raises `ValenAPIError` instead of an httpx exception.
+- HTTP clients send `User-Agent: valen-sdk-python/<version>`.
+
 ## 0.3.0 — 2026-10-29
 
 Adds `Valen.llm(provider, model)`: the same Decisions and SystemOne requests answered by an OpenAI-compatible, Anthropic or Gemini model, returning the same typed responses for side-by-side comparison. Records token usage across retries, latency and every provider attempt in `debug["llm_attempts"]`; corrects malformed output; reports truncation and refusals as `ValenAPIError` with `error.debug`. Video frames are sent as images. `valen-sdk[video]` now includes Pillow. `Usage` token counts may be `None` when a provider omits them. No new base dependencies.
