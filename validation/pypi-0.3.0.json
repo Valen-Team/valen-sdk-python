@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "name": "valen-sdk",
+  "version": "0.3.0",
+  "url": "https://pypi.org/project/valen-sdk/0.3.0/",
+  "workflow": "https://github.com/Valen-Team/valen-sdk-python/actions/runs/40844916532",
+  "trusted_publishing": true,
+  "files": [
+    {
+      "name": "valen_sdk-0.3.0-py3-none-any.whl",
+      "bytes": 43688,
+      "sha256": "78a8d98ccb023c3cae22d432cce45831d262965d666763fbd37977c17009f24b",
+      "url": "https://files.pythonhosted.org/packages/73/54/3974aaf4f8616761e3c054b856813a1f47b84d886af40b5dab62ea8e5f0a/valen_sdk-0.3.0-py3-none-any.whl"
+    },
+    {
+      "name": "valen_sdk-0.3.0.tar.gz",
+      "bytes": 816559,
+      "sha256": "2ae139f5c504e6a158b1c681f59bc9e9786f71a8ba638d1e6c6ae369ae06de8d",
+      "url": "https://files.pythonhosted.org/packages/2a/d2/b7c5583c0dc628df3f6c2df460960cbc261a1501c0b4c6d8a8f10dcb25e8/valen_sdk-0.3.0.tar.gz"
+    }
+  ],
+  "python_source_matches_git_tag": "v0.3.0",
+  "wheel_installed_no_deps_after_hash_check": true,
+  "installed_wheel_tests": "42 passed, 1 deselected (tests/test_server.py needs the server extra)",
+  "large_models_or_dependencies_downloaded": false,
+  "client_wheel_bytes": 43688
+}

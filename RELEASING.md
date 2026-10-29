@@ -1,6 +1,6 @@
 # Publishing Python SDK
 
-`valen-sdk==0.2.0` was published to [PyPI](https://pypi.org/project/valen-sdk/0.2.0/) on 2026-10-26 using the account-configured Trusted Publisher. Build, wheel/sdist metadata checks and OIDC publication passed in [the workflow](https://github.com/Valen-Team/valen-sdk-python/actions/runs/40286898341). PyPI files, SHA256, installed wheel tests and source equivalence are recorded in `validation/pypi-0.2.0.json`. GitHub distribution hashes are recorded separately because archive metadata can differ between builds.
+`valen-sdk==0.3.0` was published to [PyPI](https://pypi.org/project/valen-sdk/0.3.0/) on 2026-10-29 ([workflow](https://github.com/Valen-Team/valen-sdk-python/actions/runs/40844916532), `validation/pypi-0.3.0.json`). `valen-sdk==0.2.0` was published to [PyPI](https://pypi.org/project/valen-sdk/0.2.0/) on 2026-10-26 using the account-configured Trusted Publisher. Build, wheel/sdist metadata checks and OIDC publication passed in [the workflow](https://github.com/Valen-Team/valen-sdk-python/actions/runs/40286898341). PyPI files, SHA256, installed wheel tests and source equivalence are recorded in `validation/pypi-0.2.0.json`. GitHub distribution hashes are recorded separately because archive metadata can differ between builds.
 
 ## Configuration
 

@@ -23,17 +23,17 @@ Run text, image and video decisions inside your Python application. Get categori
 Complete workflows are maintained in the [official Cookbook](https://valen-team.github.io/cookbook/): [ticket routing](https://valen-team.github.io/cookbook/ticket-routing/), [when no option fits](https://valen-team.github.io/cookbook/unknown-categories/), [product-image screening](https://valen-team.github.io/cookbook/product-screening/) and [video tagging](https://valen-team.github.io/cookbook/video-tagging/). Code, samples and measured outputs share one source. This repository retains SDK interface and installation examples. `Valen.local` loads ONNX; connect to GGUF services over HTTP. C++ support remains scoped by this repository's reference.
 
 
-## Stable version 0.2.0
+## Stable version 0.3.0
 
-Published on [PyPI](https://pypi.org/project/valen-sdk/0.2.0/). Install the base package for HTTP clients, or the ONNX extra for local inference:
+Published on [PyPI](https://pypi.org/project/valen-sdk/0.3.0/). Install the base package for HTTP clients, or the ONNX extra for local inference:
 
 ```sh
-python -m pip install 'valen-sdk==0.2.0'
+python -m pip install 'valen-sdk==0.3.0'
 # Local CPU inference, Python 3.11+
-python -m pip install 'valen-sdk[onnx]==0.2.0'
+python -m pip install 'valen-sdk[onnx]==0.3.0'
 ```
 
-The [GitHub stable artifacts](https://github.com/Valen-Team/valen-sdk-python/releases/tag/v0.2.0) remain available. PyPI publication uses GitHub Trusted Publishing without a long-lived PyPI token; see [releasing](RELEASING.md). JavaScript SDK npm availability is tracked separately.
+The 0.2.0 [GitHub artifacts](https://github.com/Valen-Team/valen-sdk-python/releases/tag/v0.2.0) remain available. PyPI publication uses GitHub Trusted Publishing without a long-lived PyPI token; see [releasing](RELEASING.md). JavaScript SDK npm availability is tracked separately.
 
 For a first try, use the [web experience or free API](https://valen-team.github.io/). See [version selection](https://valen-team.github.io/docs/valen/choosing/).
 
@@ -42,7 +42,7 @@ For a first try, use the [web experience or free API](https://valen-team.github.
 The repository example below needs Python 3.11+ and Git. It runs on CPU; no GPU is required. Installing the PyPI wheel itself does not require Git:
 
 ```bash
-git clone --branch v0.2.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
+git clone --branch v0.3.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
 cd valen-sdk-python
 python -m pip install ".[onnx]"
 python examples/local_decisions.py
@@ -65,7 +65,7 @@ The first run downloads and caches the selected variant; the full 0.8B FP32 down
 To install the SDK directly in your own project:
 
 ```bash
-python -m pip install "valen-sdk[onnx]==0.2.0"
+python -m pip install "valen-sdk[onnx]==0.3.0"
 ```
 
 ## Images and video

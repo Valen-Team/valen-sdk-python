@@ -23,17 +23,17 @@
 完整业务流程只在[官网 Cookbook](https://valen-team.github.io/zh-Hans/cookbook/)维护：[工单分流](https://valen-team.github.io/zh-Hans/cookbook/ticket-routing/)、[候选项都不对](https://valen-team.github.io/zh-Hans/cookbook/unknown-categories/)、[商品图片筛选](https://valen-team.github.io/zh-Hans/cookbook/product-screening/)、[短视频标注](https://valen-team.github.io/zh-Hans/cookbook/video-tagging/)。代码、样例和实测结果来自同一维护源。本仓库保留 SDK 接口与安装示例；`Valen.local` 是 ONNX 路径，GGUF 服务使用远程 HTTP 客户端。C++ 集成的支持范围以本仓库说明为准。
 
 
-## 稳定版本 0.2.0
+## 稳定版本 0.3.0
 
-已正式发布到 [PyPI](https://pypi.org/project/valen-sdk/0.2.0/)。仅调用 HTTP 服务可安装基础包；本地 ONNX 推理安装对应 extra：
+已正式发布到 [PyPI](https://pypi.org/project/valen-sdk/0.3.0/)。仅调用 HTTP 服务可安装基础包；本地 ONNX 推理安装对应 extra：
 
 ```sh
-python -m pip install 'valen-sdk==0.2.0'
+python -m pip install 'valen-sdk==0.3.0'
 # 本地 CPU 推理，Python 3.11+
-python -m pip install 'valen-sdk[onnx]==0.2.0'
+python -m pip install 'valen-sdk[onnx]==0.3.0'
 ```
 
-[GitHub 稳定包](https://github.com/Valen-Team/valen-sdk-python/releases/tag/v0.2.0)继续保留。PyPI 通过 GitHub Trusted Publishing 发布，无需长期 PyPI token；见[发布说明](RELEASING.md)。JavaScript SDK 的 npm 发布状态单独管理。
+0.2.0 的 [GitHub 发布包](https://github.com/Valen-Team/valen-sdk-python/releases/tag/v0.2.0)继续保留。PyPI 通过 GitHub Trusted Publishing 发布，无需长期 PyPI token；见[发布说明](RELEASING.md)。JavaScript SDK 的 npm 发布状态单独管理。
 
 首次体验优先使用[网页或免费 API](https://valen-team.github.io/)。完整[版本选择](https://valen-team.github.io/zh-Hans/docs/valen/choosing/)。
 
@@ -42,7 +42,7 @@ python -m pip install 'valen-sdk[onnx]==0.2.0'
 以下仓库示例需要 Python 3.11+ 和 Git，使用 CPU，无需 GPU；直接安装 PyPI wheel 本身不需要 Git：
 
 ```bash
-git clone --branch v0.2.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
+git clone --branch v0.3.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
 cd valen-sdk-python
 python -m pip install ".[onnx]"
 python examples/local_decisions.py
@@ -65,7 +65,7 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
 在自己的项目中，可直接安装 SDK：
 
 ```bash
-python -m pip install "valen-sdk[onnx]==0.2.0"
+python -m pip install "valen-sdk[onnx]==0.3.0"
 ```
 
 ## 图片和视频
