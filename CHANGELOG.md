@@ -1,10 +1,11 @@
 # Changelog
 
-## 0.3.1 — unreleased
+## 0.3.1 — 2026-10-29
 
 - `AsyncValen` retries rate limits, overload and connection failures like `Valen.remote`, takes `max_retries` and `headers`, and raises `ValenAPIError` with the service's error detail.
 - A non-JSON response, such as a gateway's HTML 502, raises `ValenAPIError` with its status code, request ID and text.
 - A connection dropped mid-response (`ReadError`, `RemoteProtocolError`) is retried like a connection failure and then raises `ValenAPIError` instead of an httpx exception.
+- A self-hosted server's `{"error": {"message": ...}}` becomes the error message, and the hosted APIs' `x-llm-proxy-request-id` fills `request_id`.
 - HTTP clients send `User-Agent: valen-sdk-python/<version>`.
 
 ## 0.3.0 — 2026-10-29

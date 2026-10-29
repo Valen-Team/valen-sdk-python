@@ -108,6 +108,16 @@ def test_dropped_connections_are_retried_then_wrapped(monkeypatch):
     assert len(calls) == 6
 
 
+def test_nested_error_message_and_hosted_request_id():
+    def handle(request):
+        return httpx.Response(400, json={"error": {"type": "invalid_request", "message": "At most 8 questions"}},
+                              headers={"x-llm-proxy-request-id": "proxy-1"})
+    with Valen.remote("https://example.test/v1", transport=httpx.MockTransport(handle)) as client:
+        with pytest.raises(ValenAPIError) as exc:
+            client.system_one("red", {})
+    assert (str(exc.value), exc.value.request_id) == ("At most 8 questions", "proxy-1")
+
+
 def test_async_http():
     async def run():
         async with AsyncValen("https://example.test/v1", transport=httpx.MockTransport(lambda _: httpx.Response(200, json=response()))) as client:

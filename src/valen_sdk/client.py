@@ -23,7 +23,8 @@ def _backoff(attempt):
 
 def _result(response):
     """The JSON body, or ValenAPIError with the status, request ID and the service's detail."""
-    request_id = response.headers.get("x-request-id")
+    # Self-hosted servers send x-request-id; the hosted APIs send x-llm-proxy-request-id.
+    request_id = response.headers.get("x-request-id") or response.headers.get("x-llm-proxy-request-id")
     try:
         result = response.json()
     except ValueError as exc:
@@ -34,6 +35,8 @@ def _result(response):
         ) from exc
     if response.is_error:
         detail = result.get("error", result.get("detail", "Valen request failed")) if isinstance(result, dict) else result
+        if isinstance(detail, dict):
+            detail = detail.get("message", detail)
         raise ValenAPIError(str(detail), status_code=response.status_code, request_id=request_id)
     return result
 
