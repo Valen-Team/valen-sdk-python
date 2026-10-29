@@ -170,7 +170,7 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", local_files_only=True) as client:
 
 ## 更多
 
-[JavaScript / 浏览器 SDK](https://github.com/valen-team/valen-sdk-js) · [C++ 文本集成示例](https://github.com/valen-team/valen-sdk-cpp) · [免费 API 文档](https://valen-team.github.io/docs/valen/api/)
+[JavaScript / 浏览器 SDK](https://github.com/valen-team/valen-sdk-js) · [C++ 文本集成示例](https://github.com/valen-team/valen-sdk-cpp) · [免费 API 文档](https://valen-team.github.io/docs/valen/api/) · [Agent skill](https://github.com/Valen-Team/skills) · [llms.txt](https://valen-team.github.io/zh-Hans/llms.txt)
 
 Apache-2.0。见 [LICENSE](LICENSE) 和 [第三方许可](THIRD_PARTY_NOTICES.md)。
 

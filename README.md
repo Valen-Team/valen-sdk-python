@@ -170,7 +170,7 @@ One local client executes requests serially. `predict` accepts raw requests and 
 
 ## More
 
-[JavaScript / browser SDK](https://github.com/valen-team/valen-sdk-js) · [C++ text integration](https://github.com/valen-team/valen-sdk-cpp) · [Free API documentation](https://valen-team.github.io/docs/valen/api/)
+[JavaScript / browser SDK](https://github.com/valen-team/valen-sdk-js) · [C++ text integration](https://github.com/valen-team/valen-sdk-cpp) · [Free API documentation](https://valen-team.github.io/docs/valen/api/) · [Agent skill](https://github.com/Valen-Team/skills) · [llms.txt](https://valen-team.github.io/llms.txt)
 
 Apache-2.0. See [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
