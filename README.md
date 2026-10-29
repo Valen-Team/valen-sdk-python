@@ -120,6 +120,36 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
     print(f"Explicitness score (0–2): {result.answers['explicitness'].score:.3f}")
 ```
 
+## Compare with an LLM
+
+`Valen.llm` sends the same `system_one` or `decisions` request to a general LLM and returns the same typed response, so routing rules, thresholds and tests run unchanged against either. Use it to measure what Valen saves on your own data. It ships in the base package; video inputs need `valen-sdk[video]`. Run `python examples/llm_compare.py`:
+
+```python
+from valen_sdk import Choice, Valen
+
+questions = {"queue": Choice(instructions="Which team should handle this ticket?", criteria={
+    "billing": "Payments, charges and refunds", "technical": "Bugs and crashes in the app"})}
+valen = Valen.remote("https://api.valen-team.workers.dev/v1", model="valen-2b")
+llm = Valen.llm("openai", "gpt-4o-mini")  # reads OPENAI_API_KEY
+for client in (valen, llm):
+    result = client.system_one("I was charged twice.", questions)
+    print(result.model, result.choices["queue"].choice, result.usage.input_tokens)
+```
+
+`provider` is `openai` (Chat Completions, also any OpenAI-compatible endpoint through `base_url`), `anthropic` or `gemini`; keys come from `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` or `GEMINI_API_KEY`, or `api_key=`. Question IDs are not sent to the LLM. Images are sent inline; videos as evenly spaced frames.
+
+| Option | Use |
+| --- | --- |
+| `structured` | Default `True` uses the provider's JSON Schema output; `False` asks for JSON in the prompt, for endpoints without structured output |
+| `answer_mode` | `probabilities` (default): the LLM states a probability per candidate; `discrete`: it picks one candidate, returned as probability 1 |
+| `n_retry_malformed` | Corrective retries when the output does not match the schema, default 2 |
+| `max_retries` | Retries for rate limits, overload and connection failures, default 2 |
+| `max_tokens` | Output limit; Anthropic defaults to 4096 |
+| `video_frames` | Frames sent per video, default 8 |
+| `extra_body` | Extra provider fields, such as `{"temperature": 0}` or `{"reasoning_effort": "low"}` |
+
+LLM probabilities are the model's stated estimates, not Valen's candidate scores; compare decisions and accuracy on labelled cases rather than probability values. `usage` adds `n_retries`, `n_retries_malformed` and `latency`, summing tokens over every attempt (`None` when the endpoint omits a count). `debug["llm_attempts"]` records each provider request and response in order; post a `request` to the same endpoint to replay it. Truncated output, refusals and context overflow raise `ValenAPIError` without corrective retries, with the attempts in `error.debug`.
+
 ## CUDA
 
 In a separate environment, install `python -m pip install ".[cuda]"`, then select the CUDA variant:

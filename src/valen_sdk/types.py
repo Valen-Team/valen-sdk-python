@@ -25,8 +25,8 @@ class Score(BaseModel):
 
 class Usage(BaseModel):
     model_config = ConfigDict(extra="allow")
-    input_tokens: int = 0
-    output_tokens: int = 0
+    input_tokens: int | None = 0
+    output_tokens: int | None = 0
 
 
 class ChoiceProbability(BaseModel):

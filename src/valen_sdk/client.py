@@ -1,4 +1,4 @@
-"""One business interface with local ONNX and remote HTTP backends."""
+"""One business interface with local ONNX, remote HTTP and LLM comparison backends."""
 
 import time
 from pydantic import BaseModel
@@ -36,6 +36,13 @@ class Valen:
                 base_url, api_key=api_key, model=model, timeout=timeout, max_retries=max_retries, **options
             )
         )
+
+    @classmethod
+    def llm(cls, provider, model, **options):
+        """Answer with an OpenAI-compatible, Anthropic or Gemini model, for side-by-side comparison."""
+        from .llm import LLMBackend
+
+        return cls(LLMBackend(provider, model, **options))
 
     def decisions(self, *, input, questions, **options):
         return DecisionResponse.model_validate(

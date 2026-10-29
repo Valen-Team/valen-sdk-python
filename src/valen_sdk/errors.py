@@ -3,10 +3,11 @@ class ValenError(Exception):
 
 
 class ValenAPIError(ValenError):
-    def __init__(self, message, *, status_code=None, request_id=None):
+    def __init__(self, message, *, status_code=None, request_id=None, debug=None):
         super().__init__(message)
         self.status_code = status_code
         self.request_id = request_id
+        self.debug = debug
 
 
 class ModelCompatibilityError(ValenError):

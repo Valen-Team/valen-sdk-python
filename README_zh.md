@@ -120,6 +120,36 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
     print(f"Explicitness score (0–2): {result.answers['explicitness'].score:.3f}")
 ```
 
+## 与大模型对比
+
+`Valen.llm` 把同一个 `system_one` 或 `decisions` 请求交给通用大模型回答，返回同样的类型化结果，因此路由规则、阈值和测试无需改动即可在两者之间切换。可以用它在自己的数据上衡量换成 Valen 能节省多少。该功能包含在基础包中；视频输入需安装 `valen-sdk[video]`。运行 `python examples/llm_compare.py`：
+
+```python
+from valen_sdk import Choice, Valen
+
+questions = {"queue": Choice(instructions="Which team should handle this ticket?", criteria={
+    "billing": "Payments, charges and refunds", "technical": "Bugs and crashes in the app"})}
+valen = Valen.remote("https://api.valen-team.workers.dev/v1", model="valen-2b")
+llm = Valen.llm("openai", "gpt-4o-mini")  # 读取 OPENAI_API_KEY
+for client in (valen, llm):
+    result = client.system_one("I was charged twice.", questions)
+    print(result.model, result.choices["queue"].choice, result.usage.input_tokens)
+```
+
+`provider` 可选 `openai`（Chat Completions；通过 `base_url` 也可接任何兼容 OpenAI 的服务）、`anthropic` 或 `gemini`；密钥读取 `OPENAI_API_KEY`、`ANTHROPIC_API_KEY` 或 `GEMINI_API_KEY`，也可传 `api_key=`。问题 ID 不会发送给大模型。图片以内联方式发送，视频按均匀抽取的帧发送。
+
+| 参数 | 用途 |
+| --- | --- |
+| `structured` | 默认 `True` 使用服务商的 JSON Schema 输出；`False` 在提示词中要求 JSON，适用于不支持结构化输出的服务 |
+| `answer_mode` | `probabilities`（默认）：大模型给出每个候选的概率；`discrete`：只选一个候选，以概率 1 返回 |
+| `n_retry_malformed` | 输出不符合 schema 时的纠正重试次数，默认 2 |
+| `max_retries` | 限流、过载和连接失败的重试次数，默认 2 |
+| `max_tokens` | 输出长度上限；Anthropic 默认 4096 |
+| `video_frames` | 每个视频发送的帧数，默认 8 |
+| `extra_body` | 额外的服务商参数，例如 `{"temperature": 0}` 或 `{"reasoning_effort": "low"}` |
+
+大模型的概率是它自己报出的估计值，并非 Valen 的候选打分；请在有标注的样本上比较决策和准确率，而不是比较概率数值。`usage` 额外包含 `n_retries`、`n_retries_malformed` 和 `latency`，token 数为所有尝试之和（服务未返回时为 `None`）。`debug["llm_attempts"]` 按顺序记录每次请求和响应，把其中的 `request` 发到同一地址即可重放。输出被截断、拒答和上下文超长会直接抛出 `ValenAPIError`，不做纠正重试，尝试记录在 `error.debug` 中。
+
 ## CUDA
 
 在独立环境中安装 `python -m pip install ".[cuda]"`，然后使用 CUDA 变体：

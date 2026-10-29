@@ -1,9 +1,10 @@
-"""NumPy implementation of the existing Valen response formulas."""
+"""Existing Valen response formulas, shared by local logits and LLM probabilities."""
 import math
-import numpy as np
 
 
 def answer(question, logits, temperature=1.0):
+    import numpy as np
+
     if isinstance(temperature, bool) or not math.isfinite(temperature) or temperature <= 0:
         raise ValueError("Calibration temperature must be finite and positive")
     scores = np.asarray(logits, dtype=np.float64)
@@ -11,7 +12,11 @@ def answer(question, logits, temperature=1.0):
         raise ValueError("Expected one finite logit per candidate")
     with np.errstate(over="ignore", under="ignore"):
         probs = np.exp((scores - scores.max()) / temperature)
-    probs = (probs / probs.sum()).tolist()
+    return from_probabilities(question, (probs / probs.sum()).tolist())
+
+
+def from_probabilities(question, probs):
+    """Typed answer from one probability per candidate, in candidate order."""
     total = sum(probs)
     probs = [p / total for p in probs]
     result = {"type": question.kind}
