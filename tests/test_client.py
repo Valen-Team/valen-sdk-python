@@ -65,7 +65,7 @@ def test_user_agent_names_the_sdk_version():
         seen.append(request.headers["user-agent"])
         return httpx.Response(200, json=response())
     with Valen.remote("https://example.test/v1", transport=httpx.MockTransport(handle)) as client:
-        client.decisions(input="red", questions=[])
+        client.decisions(input="red", questions=[{"name": "red", "type": "predicate", "instructions": "Red?"}])
     assert seen == ["valen-sdk-python/" + __version__]
 
 
@@ -81,7 +81,7 @@ def test_async_retry_and_errors(status, expected, monkeypatch):
     async def run():
         async with AsyncValen("https://example.test/v1", transport=httpx.MockTransport(handle)) as client:
             with pytest.raises(ValenAPIError, match="failure") as exc:
-                await client.decisions(input="red", questions=[])
+                await client.decisions(input="red", questions=[{"name": "red", "type": "predicate", "instructions": "Red?"}])
             assert (exc.value.status_code, exc.value.request_id) == (status, "request-1")
     asyncio.run(run())
     assert len(calls) == expected
@@ -103,7 +103,7 @@ def test_dropped_connections_are_retried_then_wrapped(monkeypatch):
     async def run():
         async with AsyncValen("https://example.test/v1", transport=httpx.MockTransport(drop)) as client:
             with pytest.raises(ValenAPIError):
-                await client.decisions(input="red", questions=[])
+                await client.decisions(input="red", questions=[{"name": "red", "type": "predicate", "instructions": "Red?"}])
     asyncio.run(run())
     assert len(calls) == 6
 
@@ -121,7 +121,7 @@ def test_nested_error_message_and_hosted_request_id():
 def test_async_http():
     async def run():
         async with AsyncValen("https://example.test/v1", transport=httpx.MockTransport(lambda _: httpx.Response(200, json=response()))) as client:
-            result = await client.decisions(input="red", questions=[])
+            result = await client.decisions(input="red", questions=[{"name": "red", "type": "predicate", "instructions": "Red?"}])
             assert result.by_name("red").probability == 0.8
     asyncio.run(run())
 

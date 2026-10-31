@@ -1,5 +1,7 @@
 """Answer Valen requests with a general LLM, returning the same typed responses."""
 
+import asyncio
+import contextvars
 import base64
 import json
 import math
@@ -12,7 +14,8 @@ from types import SimpleNamespace
 
 import httpx
 
-from .errors import ValenAPIError
+from .errors import ValenAPIError, ValenTimeoutError
+from .client import _positive, _delay, _emit, _remaining
 from .media import local_videos
 from .protocol import to_internal, to_public
 from .responses import from_probabilities
@@ -52,11 +55,19 @@ class LLMBackend:
         video_frames=8,
         extra_body=None,
         transport=None,
+        total_timeout=None,
+        normalize_probabilities=True,
+        on_event=None,
     ):
         if provider not in PROVIDERS:
             raise ValueError("provider must be one of: " + ", ".join(PROVIDERS))
         if answer_mode not in {"probabilities", "discrete"}:
             raise ValueError("answer_mode must be 'probabilities' or 'discrete'")
+        for name, value in (("max_retries", max_retries), ("n_retry_malformed", n_retry_malformed)):
+            if type(value) is not int or value < 0:
+                raise ValueError(name + " must be nonnegative")
+        if type(video_frames) is not int or video_frames < 1:
+            raise ValueError("video_frames must be a positive integer")
         default_url, key_env = PROVIDERS[provider]
         if api_key is None:
             api_key = os.environ.get(key_env) or (os.environ.get("GOOGLE_API_KEY") if provider == "gemini" else None)
@@ -64,6 +75,10 @@ class LLMBackend:
         self.structured, self.answer_mode = structured, answer_mode
         self.max_tokens, self.n_retry_malformed, self.max_retries = max_tokens, n_retry_malformed, max_retries
         self.video_frames, self.extra_body = video_frames, extra_body or {}
+        self.total_timeout = _positive(total_timeout, "total_timeout")
+        self.timeout = _positive(timeout, "timeout")
+        self.normalize_probabilities = normalize_probabilities
+        self.on_event = on_event
         self.closed = False
         if provider == "anthropic":
             headers = {"x-api-key": api_key or "", "anthropic-version": "2023-06-01"}
@@ -76,6 +91,38 @@ class LLMBackend:
         )
 
     def predict(self, body, protocol, *, media_root="."):
+        total = _positive(body.get("total_timeout", self.total_timeout), "total_timeout")
+        token = _deadline.set(None if total is None else time.monotonic()+total)
+        history_token = _history.set([])
+        started = time.monotonic()
+        _emit(self.on_event, event="start", backend="llm", model=self.model)
+        try:
+            result = self._predict(body, protocol, media_root=media_root)
+            _remaining(_deadline.get())
+            _emit(self.on_event, event="complete", model=result["model"], usage=result["usage"], elapsed=time.monotonic()-started)
+            return result
+        except Exception as exc:
+            if isinstance(exc, ValenAPIError):
+                exc.debug = {**(exc.debug or {}), "llm_attempts": _history.get()}
+                exc.model = self.provider + ":" + self.model
+            _emit(self.on_event, event="error", code=getattr(exc, "code", "request_error"), elapsed=time.monotonic()-started)
+            raise
+        finally:
+            _deadline.reset(token)
+            _history.reset(history_token)
+
+    def _predict(self, body, protocol, *, media_root="."):
+        steps = self._prediction(body, protocol, media_root=media_root)
+        try:
+            pending = next(steps)
+            while True:
+                pending = steps.send(self._call(*pending))
+        except StopIteration as done:
+            return done.value
+        finally:
+            steps.close()
+
+    def _prediction(self, body, protocol, *, media_root="."):
         if self.closed:
             raise RuntimeError("Valen client is closed")
         public = "input" in body
@@ -103,13 +150,16 @@ class LLMBackend:
         with local_videos(request) as materialized:
             evidence = self._evidence(materialized["state"], Path(media_root))
         conversation = [("user", [*evidence, {"type": "text", "text": "Questions:\n" + json.dumps(listing, ensure_ascii=False, indent=2)}])]
-        attempts, retries, malformed = [], 0, 0
+        attempts, retries, malformed = _history.get(), 0, 0
         started = time.perf_counter()
         while True:
-            text, retries = self._call(conversation, schema, attempts, retries)
+            text, retries = yield conversation, schema, attempts, retries
             try:
                 raw = _parse_json(text)
+                if set(raw) != set(aliases):
+                    raise ValueError("answer question names differ from the schema")
                 answers = {qid: self._answer(questions[qid], raw.get(alias)) for alias, qid in aliases.items()}
+                normalized = {qid: self.answer_mode == "probabilities" and not math.isclose(sum(raw[alias].values()), 1, abs_tol=1e-5, rel_tol=0) for alias, qid in aliases.items()}
                 break
             except ValueError as exc:
                 attempts[-1]["error"] = str(exc)
@@ -133,7 +183,7 @@ class LLMBackend:
                 "n_retries_malformed": malformed,
                 "latency": time.perf_counter() - started,
             },
-            "debug": {"llm_attempts": attempts},
+            "debug": {"llm_attempts": attempts, "probability_source": "llm_self_reported" if self.answer_mode == "probabilities" else "llm_discrete", "normalized": normalized},
         }
         return to_public(body, response) if public else response
 
@@ -155,8 +205,10 @@ class LLMBackend:
         probs = [value[key] for key in question.keys]
         if any(isinstance(p, bool) or not isinstance(p, (int, float)) or not math.isfinite(p) or p < 0 for p in probs):
             raise ValueError("probabilities must be finite nonnegative numbers")
-        if sum(probs) <= 0:
+        if not math.isfinite(sum(probs)) or sum(probs) <= 0:
             raise ValueError("the probabilities of a question must not all be zero")
+        if not self.normalize_probabilities and (any(p > 1 for p in probs) or not math.isclose(sum(probs), 1, abs_tol=1e-5, rel_tol=0)):
+            raise ValueError("probabilities must sum to 1 (normalization disabled)")
         return from_probabilities(question, [float(p) for p in probs])
 
     def _evidence(self, state, root):
@@ -232,15 +284,21 @@ class LLMBackend:
             attempts.append(record)
             started = time.perf_counter()
             try:
-                response = self.client.post(path, json=payload)
-            except (httpx.ConnectError, httpx.TimeoutException) as exc:
+                remaining = _remaining(_deadline.get())
+                timeout = min(self.timeout, remaining) if remaining is not None and self.timeout is not None else (remaining or self.timeout)
+                response = self.client.post(path, json=payload, timeout=timeout)
+                _remaining(_deadline.get())
+            except httpx.TransportError as exc:
                 record.update(error=type(exc).__name__, latency=time.perf_counter() - started)
                 if attempt == self.max_retries:
-                    raise ValenAPIError("Unable to reach " + self.provider, debug={"llm_attempts": attempts}) from exc
+                    raise ValenAPIError("Unable to reach " + self.provider, code="timeout" if isinstance(exc, httpx.TimeoutException) else "network_error", retryable=True, debug={"llm_attempts": attempts}) from exc
                 retries += 1
-                time.sleep(min(0.5 * 2**attempt, 8))
+                self._sleep(_delay(attempt))
                 continue
-            record.update(status_code=response.status_code, latency=time.perf_counter() - started)
+            record.update(status_code=response.status_code, latency=time.perf_counter() - started,
+                          request_id=response.headers.get("x-request-id") or response.headers.get("request-id"))
+            _emit(self.on_event, event="attempt", attempt=len(attempts), status_code=response.status_code,
+                  request_id=record["request_id"])
             try:
                 record["response"] = response.json()
             except ValueError:
@@ -248,7 +306,7 @@ class LLMBackend:
             if response.status_code in RETRYABLE and attempt < self.max_retries:
                 record["error"] = "HTTP " + str(response.status_code)
                 retries += 1
-                time.sleep(min(0.5 * 2**attempt, 8))
+                self._sleep(_delay(attempt, response))
                 continue
             if response.is_error:
                 detail = record["response"].get("error", {}) if isinstance(record["response"], dict) else {}
@@ -257,6 +315,7 @@ class LLMBackend:
                 raise ValenAPIError(
                     self.provider + " request failed: " + record["error"],
                     status_code=response.status_code,
+                    request_id=record["request_id"],
                     debug={"llm_attempts": attempts},
                 )
             text, usage, stop = _read(self.provider, record["response"])
@@ -266,9 +325,17 @@ class LLMBackend:
                 raise ValenAPIError(self.provider + " " + stop, debug={"llm_attempts": attempts})
             return text, retries
 
+    def _sleep(self, delay):
+        remaining = _remaining(_deadline.get())
+        if remaining is not None and delay >= remaining:
+            raise ValenTimeoutError(debug={"reason": "retry exceeds total budget"}, model=self.model)
+        _emit(self.on_event, event="retry", delay=delay)
+        time.sleep(delay)
+
     def close(self):
-        self.closed = True
-        self.client.close()
+        if not self.closed:
+            self.closed = True
+            self.client.close()
 
 
 def _read(provider, data):
@@ -325,7 +392,7 @@ def _parse_json(text):
 
 
 def _total(counts, key):
-    values = [count[key] for count in counts]
+    values = [count.get(key) for count in counts]
     return None if not values or None in values else sum(values)
 
 
@@ -388,3 +455,124 @@ def _gemini_part(part):
     if part["type"] == "image_url":
         raise ValueError("Gemini needs inline images; pass a data URL or a local path")
     return {"inlineData": {"mimeType": part["mime"], "data": part["data"]}}
+
+
+_deadline = contextvars.ContextVar("valen_llm_deadline", default=None)
+_history = contextvars.ContextVar("valen_llm_history", default=None)
+
+
+class AsyncLLMBackend(LLMBackend):
+    """Native async provider I/O; cancellation stops retry and correction loops."""
+
+    def __init__(self, provider, model, **options):
+        transport = options.pop("transport", None)
+        super().__init__(provider, model, **options)
+        headers, base_url = dict(self.client.headers), self.client.base_url
+        self.client.close()
+        self.client = httpx.AsyncClient(base_url=base_url, headers=headers, timeout=self.timeout, transport=transport)
+
+    async def predict(self, body, protocol, *, media_root="."):
+        if self.closed:
+            raise RuntimeError("Valen client is closed")
+        total = _positive(body.get("total_timeout", self.total_timeout), "total_timeout")
+        token = _deadline.set(None if total is None else time.monotonic()+total)
+        history_token = _history.set([])
+        started = time.monotonic()
+        _emit(self.on_event, event="start", backend="llm", model=self.model)
+        try:
+            pending = self._predict(body, protocol, media_root=media_root)
+            result = await pending if total is None else await asyncio.wait_for(pending, total)
+            _emit(self.on_event, event="complete", model=result["model"], usage=result["usage"], elapsed=time.monotonic()-started)
+            return result
+        except asyncio.TimeoutError as exc:
+            _emit(self.on_event, event="error", code="timeout", elapsed=time.monotonic()-started)
+            raise ValenTimeoutError(model=self.model, debug={"llm_attempts": _history.get()}) from exc
+        except asyncio.CancelledError:
+            _emit(self.on_event, event="error", code="cancelled", elapsed=time.monotonic()-started)
+            raise
+        except Exception as exc:
+            if isinstance(exc, ValenAPIError):
+                exc.debug = {**(exc.debug or {}), "llm_attempts": _history.get()}
+                exc.model = self.provider + ":" + self.model
+            _emit(self.on_event, event="error", code=getattr(exc, "code", "request_error"), elapsed=time.monotonic()-started)
+            raise
+        finally:
+            _deadline.reset(token)
+            _history.reset(history_token)
+
+    async def _predict(self, body, protocol, *, media_root="."):
+        # Share the exact question, correction, accounting and response state machine.
+        steps = self._prediction(body, protocol, media_root=media_root)
+        try:
+            pending = next(steps)
+            while True:
+                pending = steps.send(await self._call(*pending))
+        except StopIteration as done:
+            return done.value
+        finally:
+            steps.close()
+
+    async def _call(self, conversation, schema, attempts, retries):
+        """One provider answer, retrying transient failures; every request is recorded."""
+        payload = self._payload(conversation, schema)
+        path = {"openai": "chat/completions", "anthropic": "messages"}.get(
+            self.provider, "models/" + self.model + ":generateContent"
+        )
+        for attempt in range(self.max_retries + 1):
+            record = {"request": payload, "response": None, "status_code": None, "usage": None, "error": None}
+            attempts.append(record)
+            started = time.perf_counter()
+            try:
+                remaining = _remaining(_deadline.get())
+                timeout = min(self.timeout, remaining) if remaining is not None and self.timeout is not None else (remaining or self.timeout)
+                response = await self.client.post(path, json=payload, timeout=timeout)
+                _remaining(_deadline.get())
+            except httpx.TransportError as exc:
+                record.update(error=type(exc).__name__, latency=time.perf_counter() - started)
+                if attempt == self.max_retries:
+                    raise ValenAPIError("Unable to reach " + self.provider, code="timeout" if isinstance(exc, httpx.TimeoutException) else "network_error", retryable=True, debug={"llm_attempts": attempts}) from exc
+                retries += 1
+                await self._sleep(_delay(attempt))
+                continue
+            record.update(status_code=response.status_code, latency=time.perf_counter() - started,
+                          request_id=response.headers.get("x-request-id") or response.headers.get("request-id"))
+            _emit(self.on_event, event="attempt", attempt=len(attempts), status_code=response.status_code,
+                  request_id=record["request_id"])
+            try:
+                record["response"] = response.json()
+            except ValueError:
+                record["response"] = response.text
+            if response.status_code in RETRYABLE and attempt < self.max_retries:
+                record["error"] = "HTTP " + str(response.status_code)
+                retries += 1
+                await self._sleep(_delay(attempt, response))
+                continue
+            if response.is_error:
+                detail = record["response"].get("error", {}) if isinstance(record["response"], dict) else {}
+                message = detail.get("message") if isinstance(detail, dict) else None
+                record["error"] = message or "HTTP " + str(response.status_code)
+                raise ValenAPIError(
+                    self.provider + " request failed: " + record["error"],
+                    status_code=response.status_code,
+                    request_id=record["request_id"],
+                    debug={"llm_attempts": attempts},
+                )
+            text, usage, stop = _read(self.provider, record["response"])
+            record["usage"] = usage
+            if stop:
+                record["error"] = stop
+                raise ValenAPIError(self.provider + " " + stop, debug={"llm_attempts": attempts})
+            return text, retries
+
+
+    async def _sleep(self, delay):
+        remaining = _remaining(_deadline.get())
+        if remaining is not None and delay >= remaining:
+            raise ValenTimeoutError(model=self.model)
+        _emit(self.on_event, event="retry", delay=delay)
+        await asyncio.sleep(delay)
+
+    async def close(self):
+        if not self.closed:
+            self.closed = True
+            await self.client.aclose()

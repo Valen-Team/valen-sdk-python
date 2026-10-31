@@ -16,6 +16,10 @@ def test_selective_fixed_revision_and_offline_cache(tmp_path, monkeypatch):
         calls.append(('manifest', repo, filename, kwargs))
         return str(manifest)
     def snapshot(repo, **kwargs):
+        for name in ["config.json", "q8/decision.onnx"]:
+            asset = tmp_path / name
+            asset.parent.mkdir(parents=True, exist_ok=True)
+            asset.touch()
         calls.append(('snapshot', repo, kwargs))
         return str(tmp_path)
     hub = types.ModuleType('huggingface_hub')

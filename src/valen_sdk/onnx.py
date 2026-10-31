@@ -110,13 +110,19 @@ class ONNXBackend:
         model_name=None,
         verify=False,
         profile_dir=None,
+        on_event=None,
     ):
         import onnxruntime as ort
+        from .client import _emit
+        import time
 
+        started = time.monotonic()
+        self.on_event = on_event
+        self.variant_name = variant
         if type(num_threads) is not int or num_threads < 1:
             raise ValueError("num_threads must be positive")
         self.directory = resolve_directory(
-            model, revision=revision, local_files_only=local_files_only, cache_dir=cache_dir, variant=variant
+            model, revision=revision, local_files_only=local_files_only, cache_dir=cache_dir, variant=variant, on_event=on_event
         )
         self.config = json.loads((self.directory / "config.json").read_text())
         self.manifest = None
@@ -169,6 +175,14 @@ class ONNXBackend:
             self.options.enable_profiling = True
             self.options.profile_file_prefix = str(Path(profile_dir) / "valen")
         self.sessions, self.lock, self.closed = {}, threading.RLock(), False
+        _emit(on_event, event="load_complete", backend="local", model=self.name, variant=variant,
+              providers=[p if isinstance(p, str) else p[0] for p in self.providers], elapsed=time.monotonic()-started)
+
+    @property
+    def info(self):
+        return {"backend": "onnx", "model": self.name, "variant": self.variant_name,
+                "providers": [p if isinstance(p, str) else p[0] for p in self.providers],
+                "loaded_graphs": list(self.sessions), "closed": self.closed}
 
     def session(self, name):
         import onnxruntime as ort
@@ -180,6 +194,10 @@ class ONNXBackend:
             if not path.is_file():
                 raise ModelCompatibilityError(f"Missing ONNX graph: {path}")
             try:
+                from .client import _emit
+                import time
+                started = time.monotonic()
+                _emit(self.on_event, event="graph_load_start", backend="local", graph=name, model=self.name)
                 loaded = ort.InferenceSession(str(path), self.options, providers=self.providers)
                 requested = [p if isinstance(p, str) else p[0] for p in self.providers]
                 if (
@@ -190,6 +208,7 @@ class ONNXBackend:
                         "CUDA provider initialization failed; install compatible CUDA/cuDNN runtime dependencies"
                     )
                 self.sessions[name] = loaded
+                _emit(self.on_event, event="graph_load_complete", backend="local", graph=name, model=self.name, elapsed=time.monotonic()-started)
             except Exception as exc:
                 raise ModelCompatibilityError(
                     f"Cannot load {name} graph with ONNX Runtime {ort.__version__}: {exc}"
@@ -290,7 +309,22 @@ class ONNXBackend:
             counts = [len(branch.candidate_spans) for branch in branches]
         return np.split(np.asarray(logits).reshape(-1), np.cumsum(counts)[:-1])
 
-    def predict(self, body, protocol=None, *, media_root=".", execution=None, temperature=1.0):
+    def predict(self, body, protocol, **options):
+        from .client import _emit
+        import time
+        started = time.monotonic()
+        _emit(self.on_event, event="start", backend="local", model=self.name)
+        try:
+            result = self._predict(body, protocol, **options)
+            _emit(self.on_event, event="complete", backend="local", model=self.name,
+                  usage=result.get("usage"), elapsed=time.monotonic()-started)
+            return result
+        except Exception:
+            _emit(self.on_event, event="error", backend="local", model=self.name,
+                  code="local_inference_error", elapsed=time.monotonic()-started)
+            raise
+
+    def _predict(self, body, protocol=None, *, media_root=".", execution=None, temperature=1.0):
         with self.lock:
             if self.closed:
                 raise RuntimeError("Valen client is closed")

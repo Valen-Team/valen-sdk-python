@@ -1,0 +1,953 @@
+{
+  "contract": "valen-sdk-contract-1",
+  "probability_sum_tolerance": 1e-05,
+  "cases": [
+    {
+      "name": "valid-system-one",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": 0.8
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "missing-answer",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "unknown-answer",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": 0.8
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          },
+          "extra": {
+            "type": "noul",
+            "noul": 0.5
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "wrong-type",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "choice",
+            "noul": 0.8
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "unknown-choice",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "green",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": 0.8
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "missing-value",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul"
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "negative-probability",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": -0.1
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "boolean-probability",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": true
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "bad-sum",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.1
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": 0.8
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "unknown-candidate",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "green": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": 0.8
+          },
+          "quality": {
+            "type": "score",
+            "score": 0.7,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "score-range",
+      "request": {
+        "state": "A red item",
+        "questions": {
+          "color": {
+            "type": "choice",
+            "instructions": "Colour?",
+            "criteria": {
+              "red": "Red",
+              "blue": "Blue"
+            }
+          },
+          "visible": {
+            "type": "noul",
+            "instructions": "Visible?"
+          },
+          "quality": {
+            "type": "score",
+            "instructions": "Quality?",
+            "criteria": [
+              "Low",
+              "High"
+            ]
+          }
+        }
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": {
+          "color": {
+            "type": "choice",
+            "choice": "red",
+            "probabilities": {
+              "red": 0.8,
+              "blue": 0.2
+            },
+            "confidence": 0.6
+          },
+          "visible": {
+            "type": "noul",
+            "noul": 0.8
+          },
+          "quality": {
+            "type": "score",
+            "score": 2,
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.4,
+            "legend": {
+              "0": "Low",
+              "1": "High"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 0
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "boolean-vs-string-candidates",
+      "request": {
+        "input": "red",
+        "questions": [
+          {
+            "name": "flag",
+            "type": "choice",
+            "instructions": "Flag?",
+            "choices": [
+              {
+                "value": true,
+                "description": "True"
+              },
+              {
+                "value": "true",
+                "description": "String"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": [
+          {
+            "name": "flag",
+            "type": "choice",
+            "choice": true,
+            "probabilities": [
+              {
+                "value": true,
+                "probability": 0.8
+              },
+              {
+                "value": "true",
+                "probability": 0.2
+              }
+            ],
+            "confidence": 0.6
+          }
+        ],
+        "usage": {}
+      },
+      "valid": true
+    },
+    {
+      "name": "duplicate-answer",
+      "request": {
+        "input": "red",
+        "questions": [
+          {
+            "name": "flag",
+            "type": "choice",
+            "instructions": "Flag?",
+            "choices": [
+              {
+                "value": true,
+                "description": "True"
+              },
+              {
+                "value": "true",
+                "description": "String"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": [
+          {
+            "name": "flag",
+            "type": "choice",
+            "choice": true,
+            "probabilities": [
+              {
+                "value": true,
+                "probability": 0.8
+              },
+              {
+                "value": "true",
+                "probability": 0.2
+              }
+            ],
+            "confidence": 0.6
+          },
+          {
+            "name": "flag",
+            "type": "choice",
+            "choice": true,
+            "probabilities": [
+              {
+                "value": true,
+                "probability": 0.8
+              },
+              {
+                "value": "true",
+                "probability": 0.2
+              }
+            ],
+            "confidence": 0.6
+          }
+        ],
+        "usage": {}
+      },
+      "valid": false
+    },
+    {
+      "name": "candidate-type-mismatch",
+      "request": {
+        "input": "red",
+        "questions": [
+          {
+            "name": "flag",
+            "type": "choice",
+            "instructions": "Flag?",
+            "choices": [
+              {
+                "value": true,
+                "description": "True"
+              },
+              {
+                "value": "true",
+                "description": "String"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "model": "fixture-v1",
+        "answers": [
+          {
+            "name": "flag",
+            "type": "choice",
+            "choice": true,
+            "probabilities": [
+              {
+                "value": true,
+                "probability": 0.8
+              },
+              {
+                "value": true,
+                "probability": 0.2
+              }
+            ],
+            "confidence": 0.6
+          }
+        ],
+        "usage": {}
+      },
+      "valid": false
+    },
+    {
+      "name": "reordered-public-answers",
+      "valid": true,
+      "request": {
+        "input": "x",
+        "questions": [
+          {
+            "name": "first",
+            "type": "predicate",
+            "instructions": "First?"
+          },
+          {
+            "name": "second",
+            "type": "predicate",
+            "instructions": "Second?"
+          }
+        ]
+      },
+      "response": {
+        "model": "fixture-v1",
+        "usage": {},
+        "answers": [
+          {
+            "name": "second",
+            "type": "predicate",
+            "probability": 0.2
+          },
+          {
+            "name": "first",
+            "type": "predicate",
+            "probability": 0.8
+          }
+        ]
+      },
+      "expected_answer_names": [
+        "first",
+        "second"
+      ]
+    }
+  ],
+  "formula_cases": [
+    {
+      "type": "choice",
+      "keys": [
+        "a",
+        "b"
+      ],
+      "descriptions": [
+        "A",
+        "B"
+      ],
+      "logits": [
+        1,
+        1
+      ],
+      "expected": {
+        "choice": "a",
+        "confidence": 0,
+        "probabilities": {
+          "a": 0.5,
+          "b": 0.5
+        }
+      }
+    },
+    {
+      "type": "score",
+      "keys": [
+        "0",
+        "1",
+        "2"
+      ],
+      "descriptions": [
+        "Low",
+        "Mid",
+        "High"
+      ],
+      "logits": [
+        0,
+        -50,
+        0
+      ],
+      "expected": {
+        "score": 1,
+        "probabilities": {
+          "0": 0.5,
+          "1": 0,
+          "2": 0.5
+        }
+      }
+    }
+  ]
+}

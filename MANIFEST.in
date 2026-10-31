@@ -4,3 +4,6 @@ recursive-include examples *.py
 recursive-include assets/branding *.png
 include CHANGELOG.md RELEASING.md
 prune src/build
+
+recursive-include contracts *.json *.md
+recursive-include validation *.py

@@ -18,6 +18,27 @@
 
 Run text, image and video decisions inside your Python application. Get categories, yes/no probabilities and scores for ticket routing, content screening and ranking. Use local CPU inference, NVIDIA CUDA or a remote HTTP service. Local inference uses ONNX Runtime without PyTorch or Transformers.
 
+## Reliability and integration controls
+
+Typed methods validate returned answers against the questions you sent. Invalid or incomplete responses raise `ValenResponseError` with a field path; raw `predict` retains the compatibility interface.
+
+```python
+from valen_sdk import Valen, Noul
+
+with Valen.remote("https://api.valen-team.workers.dev/v1",
+                  timeout=10, total_timeout=25,
+                  on_event=lambda event: print(event)) as client:
+    response = client.system_one("The order arrived.", {
+        "arrived": Noul(instructions="The order arrived.")
+    })
+```
+
+Durations are seconds. `total_timeout` includes retry waits. For cancellable concurrent LLM comparisons, use `async with AsyncValen.llm(provider, model, ...)`; it supports the same question and response interfaces, normalization diagnostics and correction accounting as `Valen.llm`. `normalize_probabilities=False` rejects LLM distributions that need rescaling.
+
+Pass `http_client=` to borrow an existing `httpx.Client` / `httpx.AsyncClient`; closing Valen leaves that client open. Pass `on_event=` to local clients for loading stages, inspect `client.info`, and use `client.warmup(request)` to load lazy graphs with a representative request.
+
+See the [complete behavior and timeout contract](contracts/README.md), [runnable reliability example](examples/reliability.py) and [upgrade notes](CHANGELOG.md). Events exclude input bodies; explicit LLM debug histories can contain them.
+
 ## Complete application tutorials
 
 Complete workflows are maintained in the [official Cookbook](https://valen-team.github.io/cookbook/): [ticket routing](https://valen-team.github.io/cookbook/ticket-routing/), [when no option fits](https://valen-team.github.io/cookbook/unknown-categories/), [product-image screening](https://valen-team.github.io/cookbook/product-screening/) and [video tagging](https://valen-team.github.io/cookbook/video-tagging/). Code, samples and measured outputs share one source. This repository retains SDK interface and installation examples. `Valen.local` loads ONNX; connect to GGUF services over HTTP. C++ support remains scoped by this repository's reference.

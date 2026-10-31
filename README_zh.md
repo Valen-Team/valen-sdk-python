@@ -205,3 +205,9 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", local_files_only=True) as client:
 Apache-2.0。见 [LICENSE](LICENSE) 和 [第三方许可](THIRD_PARTY_NOTICES.md)。
 
 用户指南唯一维护在官网：[Documentation](https://valen-team.github.io/zh-Hans/docs/) · [Fine-tuning](https://valen-team.github.io/zh-Hans/docs/valen/training/) · [Probabilities](https://valen-team.github.io/zh-Hans/docs/valen/probabilities/) · [Cookbook](https://valen-team.github.io/zh-Hans/cookbook/).
+
+## 可靠性与升级说明
+
+类型化调用会校验漏答、题型、候选值和概率分布，非法响应抛出带字段路径的 `ValenResponseError`。原始 `predict` 保留宽松接口。`timeout` 为每次尝试的秒数；`total_timeout` 为包含重试等待的总预算。异步调用可取消正在进行的网络请求；同步调用受底层阻塞行为约束，详见[行为契约](contracts/README.md)。
+
+`AsyncValen.llm(...)` 支持并发 LLM 对照、纠错计数和归一化诊断。`http_client=` 借用已有连接，关闭 SDK 不关闭借入连接。`on_event=` 仅提供元数据；本地客户端可用 `info` 查看配置，用 `warmup(request)` 加载实际请求需要的图。[完整示例](examples/reliability.py)。

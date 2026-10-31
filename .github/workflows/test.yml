@@ -12,6 +12,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install '.[test,server]' numpy 'packaging>=23' build
+      - run: python -m pip install '.[test,server]' numpy 'packaging>=23' build 'setuptools>=77' wheel
       - run: python -m pytest
       - run: python -m build
+      - run: python validation/package_smoke.py

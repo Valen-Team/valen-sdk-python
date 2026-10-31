@@ -21,7 +21,7 @@ def test_http_roundtrip_auth_models_and_media():
         async with AsyncValen("http://test/v1", api_key="secret", transport=transport) as client:
             result = await client.system_one("red", {"red": Noul(instructions="Red?")})
             assert result.nouls["red"].noul == 0.8
-            result = await client.decisions(input="red", questions=[])
+            result = await client.decisions(input="red", questions=[{"name": "red", "type": "predicate", "instructions": "Red?"}])
             assert result.by_name("red").probability == 0.8
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             assert (await client.get("/v1/models")).status_code == 401

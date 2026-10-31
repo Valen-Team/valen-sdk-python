@@ -1,3 +1,12 @@
+# Unreleased
+
+- Validate typed answers against request names, kinds, candidates and finite probability distributions. Raw `predict` remains available. Malformed responses previously accepted now fail explicitly.
+- Add total request budgets, Retry-After with jitter, stable timeout/response errors and metadata-only event hooks.
+- Add local loading stages, runtime information and representative-request warmup; document concurrency and ownership.
+- Add versioned cross-language protocol/formula fixtures and installed-package smoke tests.
+- Add native asynchronous LLM comparisons, optional probability normalization and provenance diagnostics. Missing token counts are unknown, not zero.
+- Support borrowed httpx clients without transferring ownership; improve missing-answer lookup errors.
+
 # Changelog
 
 ## 0.3.1 — 2026-10-29
