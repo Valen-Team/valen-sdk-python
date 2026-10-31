@@ -1,0 +1,17 @@
+{
+  "version": "0.4.0",
+  "filename": "valen_sdk-0.4.0-py3-none-any.whl",
+  "sha256": "f5dcf72c9844a26e594035816689987ca951456ce405e04dff17be0bc8f6990b",
+  "installed_http_smoke": "passed",
+  "files": [
+    {
+      "filename": "valen_sdk-0.4.0-py3-none-any.whl",
+      "sha256": "f5dcf72c9844a26e594035816689987ca951456ce405e04dff17be0bc8f6990b"
+    },
+    {
+      "filename": "valen_sdk-0.4.0.tar.gz",
+      "sha256": "6c30b41d9a30cb4e39e6d6465182749404dc28fc3f9154d011a3da57a8c1441a"
+    }
+  ],
+  "workflow": "https://github.com/Valen-Team/valen-sdk-python/actions/runs/41156095312"
+}

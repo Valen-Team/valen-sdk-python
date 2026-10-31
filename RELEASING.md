@@ -1,6 +1,4 @@
-## Prepared release 0.4.0
-
-Prepared on 2026-10-31. Publication is pending; verify the registry before updating stable install instructions. See CHANGELOG.md for compatibility notes.
+`valen-sdk==0.4.0` was published on 2026-10-31 from `v0.4.0` through [GitHub Actions](https://github.com/Valen-Team/valen-sdk-python/actions/runs/41156095312). Public wheel SHA256 and installed-package smoke tests passed; see `validation/pypi-0.4.0.json`.
 
 # Publishing Python SDK
 
