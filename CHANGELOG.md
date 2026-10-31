@@ -1,4 +1,4 @@
-# Unreleased
+# 0.4.0 — 2026-10-31
 
 - Validate typed answers against request names, kinds, candidates and finite probability distributions. Raw `predict` remains available. Malformed responses previously accepted now fail explicitly.
 - Add total request budgets, Retry-After with jitter, stable timeout/response errors and metadata-only event hooks.
