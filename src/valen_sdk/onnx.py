@@ -17,7 +17,7 @@ from .assets import resolve_directory
 from .processing import Processor, position_ids
 from .media import local_videos
 from .protocol import local_images, to_internal, to_public
-from .responses import answer
+from .responses import answer, box
 from .schema import candidates
 
 
@@ -77,6 +77,33 @@ def vision_inputs(pixel_values, grid_thw, config):
         "rotary_sin": np.sin(rotary).astype(np.float32),
         "attention_mask": mask,
     }
+
+
+def block_attention_mask(mode, segments, prefix, bbox=()):
+    """Additive [L, L] mask for the full-attention layers of Valen-Decision-1.5.
+
+    The state prefix attends within itself. With ``block_bidirectional`` the rest of the
+    sequence is one block that sees everything; with ``prefix_lm`` it is causal; with
+    ``question_blocks`` each question sees the prefix, the shared glue and itself, and
+    ``bbox_blocks`` merges the decision questions into one such block while each bbox
+    question (segment ids in ``bbox``) keeps its own.
+    """
+    length = len(segments)
+    order = np.arange(length)
+    key_prefix = (order < prefix)[None, :]
+    query_prefix = (order < prefix)[:, None]
+    if mode == "block_bidirectional":
+        rule = np.ones((length, length), dtype=bool)
+    elif mode == "prefix_lm":
+        rule = order[None, :] <= order[:, None]
+    elif mode in ("question_blocks", "bbox_blocks"):
+        if mode == "bbox_blocks":
+            segments = np.where((segments > 0) & ~np.isin(segments, bbox), 1, segments)
+        rule = key_prefix | (segments == 0)[None, :] | (segments[None, :] == segments[:, None])
+    else:
+        raise ModelCompatibilityError(f"Unknown attention mask mode {mode!r}")
+    visible = np.where(query_prefix, key_prefix, rule)
+    return np.where(visible, 0.0, np.finfo(np.float32).min).astype(np.float32)
 
 
 def features(hidden, branch):
@@ -143,7 +170,7 @@ class ONNXBackend:
             if variant != "fp32":
                 raise ModelCompatibilityError("Legacy bundles expose only their original FP32 variant")
             self.variant = {}
-            self.graphs = {name: "onnx/" + name + ".onnx" for name in ["text", "head", "vision"]}
+            self.graphs = {name: "onnx/" + name + ".onnx" for name in ["text", "head", "vision", "grounding"]}
         self.name = model_name or (self.manifest or {}).get("model_name", Path(str(model)).name)
         self.execution = execution or self.config.get("qwen_execution", "shared_state")
         self.media_kwargs = deepcopy(self.config.get("valen_media_kwargs", {}))
@@ -190,6 +217,8 @@ class ONNXBackend:
         if self.closed:
             raise RuntimeError("Valen client is closed")
         if name not in self.sessions:
+            if name not in self.graphs:
+                raise ModelCompatibilityError(f"Missing ONNX graph: {name}")
             path = self.directory / self.graphs[name]
             if not path.is_file():
                 raise ModelCompatibilityError(f"Missing ONNX graph: {path}")
@@ -249,24 +278,45 @@ class ONNXBackend:
         positions, visuals = self.visual(inputs)
         rope = position_ids(inputs, self.config["vision_config"]["spatial_merge_size"])
         if "decision" not in self.graphs:
-            hidden = self.session("text").run(
-                None,
-                {
-                    "input_ids": ids,
-                    "position_ids": rope,
-                    "visual_positions": positions,
-                    "visual_features": visuals,
-                },
-            )[0]
-            counts = [len(branch.candidate_spans) for branch in branches]
-            logits = self.session("head").run(
-                None, {"features": np.concatenate([features(hidden, branch) for branch in branches])}
-            )[0]
+            feeds = {
+                "input_ids": ids,
+                "position_ids": rope,
+                "visual_positions": positions,
+                "visual_features": visuals,
+            }
+            text = self.session("text")
+            if any(item.name == "attention_mask" for item in text.get_inputs()):
+                branch = branches[0]
+                if branch.segments is None:
+                    raise ModelCompatibilityError("This model needs shared_state execution")
+                feeds["attention_mask"] = block_attention_mask(
+                    self.config.get("valen_full_attention_mask", "causal"), branch.segments, branch.context_span[1],
+                    branch.bbox_segments or (),
+                )
+            hidden = text.run(None, feeds)[0]
+            decisions = [branch for branch in branches if branch.image_grid is None]
+            logits = iter(np.split(np.asarray(self.session("head").run(
+                None, {"features": np.concatenate([features(hidden, branch) for branch in decisions])}
+            )[0]).reshape(-1), np.cumsum([len(branch.candidate_spans) for branch in decisions])[:-1]) if decisions else [])
+            return [
+                next(logits) if branch.image_grid is None else
+                box(*self.session("grounding").run(None, {
+                    "decision": hidden[0, branch.decision_position].astype(np.float32),
+                    "tokens": hidden[0, branch.image_positions].astype(np.float32),
+                }), branch.image_grid)
+                for branch in branches
+            ]
         else:
             embedding_session = self.session("embedding")
             embeds = embedding_session.run(None, {"input_ids": ids})[0]
             embeds[0, positions] = visuals
             session = self.session("decision")
+            decisions = [branch for branch in branches if branch.image_grid is None]
+            outputs = ["logits"]
+            if len(decisions) < len(branches):
+                if not any(item.name == "final_hidden" for item in session.get_outputs()):
+                    raise ModelCompatibilityError("This model does not answer bbox questions")
+                outputs.append("final_hidden")
             spans = [
                 [
                     branch.context_span,
@@ -274,15 +324,25 @@ class ONNXBackend:
                     candidate,
                     [branch.decision_position, branch.decision_position + 1],
                 ]
-                for branch in branches
+                for branch in decisions
                 for candidate in branch.candidate_spans
-            ]
+            ] or [[branches[0].context_span] * 4]  # the graph scores at least one row
+            declared = {item.name for item in session.get_inputs()}
             feeds = {
                 "inputs_embeds": embeds,
                 "position_ids": rope,
-                "attention_mask": np.ones_like(ids),
                 "role_spans": np.asarray(spans, dtype=np.int64),
             }
+            if "attention_mask" in declared:
+                feeds["attention_mask"] = np.ones_like(ids)
+            if "block_mask" in declared:
+                branch = branches[0]
+                if branch.segments is None:
+                    raise ModelCompatibilityError("This model needs shared_state execution")
+                feeds["block_mask"] = block_attention_mask(
+                    self.config.get("valen_full_attention_mask", "causal"), branch.segments, branch.context_span[1],
+                    branch.bbox_segments or (),
+                )
             for item in session.get_inputs():
                 if item.name in feeds:
                     continue
@@ -305,9 +365,20 @@ class ONNXBackend:
                 feeds[item.name] = np.zeros(
                     shape, dtype=np.float16 if item.type == "tensor(float16)" else np.float32
                 )
-            logits = session.run(["logits"], feeds)[0]
-            counts = [len(branch.candidate_spans) for branch in branches]
-        return np.split(np.asarray(logits).reshape(-1), np.cumsum(counts)[:-1])
+            logits, *hidden = session.run(outputs, feeds)
+            if not decisions:
+                scores = iter(())
+            else:
+                counts = [len(branch.candidate_spans) for branch in decisions]
+                scores = iter(np.split(np.asarray(logits).reshape(-1), np.cumsum(counts)[:-1]))
+            return [
+                next(scores) if branch.image_grid is None else
+                box(*self.session("grounding").run(None, {
+                    "decision": hidden[0][branch.decision_position].astype(np.float32),
+                    "tokens": hidden[0][branch.image_positions].astype(np.float32),
+                }), branch.image_grid)
+                for branch in branches
+            ]
 
     def predict(self, body, protocol, **options):
         from .client import _emit
@@ -350,7 +421,7 @@ class ONNXBackend:
                 candidates(question)
             temperature = body.get("temperature", temperature)
             if isinstance(temperature, dict):
-                for kind in {question["type"] for question in request["questions"].values()}:
+                for kind in {question["type"] for question in request["questions"].values()} - {"bbox"}:
                     value = temperature.get(kind)
                     if (
                         isinstance(value, bool)
@@ -373,6 +444,7 @@ class ONNXBackend:
                     self.max_length,
                     self.media_kwargs,
                     execution=execution or body.get("execution", self.execution),
+                    decision_version=self.config.get("valen_decision_version", "1.0"),
                 ).compile({"request": materialized})
                 if state.inputs is not None:
                     branches = [branch for question in state.questions for branch in question.branches]
@@ -385,13 +457,14 @@ class ONNXBackend:
                     ]
                 iterator = iter(values)
                 logits = [
+                    next(iterator) if question.kind == "bbox" else
                     np.concatenate([next(iterator) for _ in question.branches])
                     for question in state.questions
                 ]
                 response = {
                     "model": self.name,
                     "answers": {
-                        question.qid: answer(
+                        question.qid: z if question.kind == "bbox" else answer(
                             question,
                             z,
                             temperature[question.kind] if isinstance(temperature, dict) else temperature,

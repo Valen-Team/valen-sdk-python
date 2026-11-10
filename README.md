@@ -16,7 +16,7 @@
 
 [Valen](https://github.com/Valen-Team/Valen) is a multimodal System One decision model that returns structured decision probabilities for your tasks. This repository provides the Python SDK for Valen.
 
-Run text, image and video decisions inside your Python application. Get categories, yes/no probabilities and scores for ticket routing, content screening and ranking. Use local CPU inference, NVIDIA CUDA or a remote HTTP service. Local inference uses ONNX Runtime without PyTorch or Transformers.
+Run text, image and video decisions inside your Python application. Get categories, yes/no probabilities and scores for ticket routing, content screening and ranking. Use local CPU inference, NVIDIA CUDA or a remote HTTP service. Local inference uses ONNX Runtime without PyTorch or Transformers. `Valen.remote` on the hosted API reaches Valen-Decision-1.5 0.8B, 2B and 4B through the model IDs `valen-0.8b`, `valen-2b` and `valen-4b`; `Valen.local` runs the Valen-Decision-1.5 ONNX bundles (`Valen-Decision-1.5-0.8B-ONNX`, `2B`, `4B`, `9B`, `27B`) with results that match the native model, answers `bbox` questions with them, and runs the Valen-Decision-1.0 ONNX models (`Valen-0.8B-ONNX`, `Valen-2B-ONNX`, `Valen-4B-ONNX`).
 
 ## Reliability and integration controls
 
@@ -44,14 +44,14 @@ See the [complete behavior and timeout contract](contracts/README.md), [runnable
 Complete workflows are maintained in the [official Cookbook](https://valen-team.github.io/cookbook/): [ticket routing](https://valen-team.github.io/cookbook/ticket-routing/), [when no option fits](https://valen-team.github.io/cookbook/unknown-categories/), [product-image screening](https://valen-team.github.io/cookbook/product-screening/) and [video tagging](https://valen-team.github.io/cookbook/video-tagging/). Code, samples and measured outputs share one source. This repository retains SDK interface and installation examples. `Valen.local` loads ONNX; connect to GGUF services over HTTP. C++ support remains scoped by this repository's reference.
 
 
-## Stable version 0.4.0
+## Stable version 0.5.0
 
-Published on [PyPI](https://pypi.org/project/valen-sdk/0.4.0/). Install the base package for HTTP clients, or the ONNX extra for local inference:
+Published on [PyPI](https://pypi.org/project/valen-sdk/0.5.0/). Install the base package for HTTP clients, or the ONNX extra for local inference:
 
 ```sh
-python -m pip install 'valen-sdk==0.4.0'
+python -m pip install 'valen-sdk==0.5.0'
 # Local CPU inference, Python 3.11+
-python -m pip install 'valen-sdk[onnx]==0.4.0'
+python -m pip install 'valen-sdk[onnx]==0.5.0'
 ```
 
 The 0.2.0 [GitHub artifacts](https://github.com/Valen-Team/valen-sdk-python/releases/tag/v0.2.0) remain available. PyPI publication uses GitHub Trusted Publishing without a long-lived PyPI token; see [releasing](RELEASING.md). JavaScript SDK npm availability is tracked separately.
@@ -63,30 +63,30 @@ For a first try, use the [web experience or free API](https://valen-team.github.
 The repository example below needs Python 3.11+ and Git. It runs on CPU; no GPU is required. Installing the PyPI wheel itself does not require Git:
 
 ```bash
-git clone --branch v0.4.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
+git clone --branch v0.5.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
 cd valen-sdk-python
 python -m pip install ".[onnx]"
 python examples/local_decisions.py
 ```
 
-A minimal protocol call follows; the Cookbook owns routing, thresholds and ranking:
+A minimal protocol call with Valen-Decision-1.5 follows (the scripts in `examples/` load the Valen-Decision-1.0 0.8B bundle); the Cookbook owns routing, thresholds and ranking:
 
 ```python
 from valen_sdk import Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
     result = client.decisions(input="A cat is on the sofa.", questions=[
         {"name": "cat", "type": "predicate", "instructions": "A cat is present."},
     ])
     print(result.by_name("cat").probability)
 ```
 
-The first run downloads and caches the selected variant; the full 0.8B FP32 download is about 3.51 GB. Later runs reuse the cache. See the [0.8B](https://huggingface.co/Valen-Team/Valen-0.8B-ONNX), [2B](https://huggingface.co/Valen-Team/Valen-2B-ONNX) and [4B](https://huggingface.co/Valen-Team/Valen-4B-ONNX) cards for model selection, downloads and measured memory.
+The first run downloads and caches the selected variant; the full 0.8B FP32 download is about 3.52 GB. Later runs reuse the cache. See the Valen-Decision-1.5 [0.8B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-0.8B-ONNX), [2B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-2B-ONNX), [4B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-4B-ONNX), [9B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-9B-ONNX) and [27B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-27B-ONNX) cards for model selection and downloads, and the [ONNX guide](https://valen-team.github.io/docs/valen/onnx/#models-and-variants) for sizes and validation against the native model.
 
 To install the SDK directly in your own project:
 
 ```bash
-python -m pip install "valen-sdk[onnx]==0.4.0"
+python -m pip install "valen-sdk[onnx]==0.5.0"
 ```
 
 ## Images and video
@@ -99,7 +99,7 @@ Start a CPU service on your machine:
 
 ```bash
 python -m pip install ".[onnx,server]"
-valen serve --model Valen-Team/Valen-0.8B-ONNX --model-name valen --port 8000
+valen serve --model Valen-Team/Valen-Decision-1.5-0.8B-ONNX --model-name valen --port 8000
 ```
 
 In another terminal, run `python examples/http_client.py`, or call the service from your application:
@@ -125,7 +125,7 @@ Decisions uses a question list; SystemOne uses questions keyed by ID. Both forma
 ```python
 from valen_sdk import Choice, Noul, Score, Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
     result = client.system_one(
         "I moved. Please ship my order to 12 Elm Street instead.",
         {
@@ -140,6 +140,27 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
     print(f"Address change probability: {result.answers['change_address'].noul:.3f}")
     print(f"Explicitness score (0–2): {result.answers['explicitness'].score:.3f}")
 ```
+
+## Bbox questions
+
+A `bbox` question locates something in an image and returns `bbox` `[x1, y1, x2, y2]`, `point` `[x, y]` and `confidence`, normalized to 0–1. Local inference answers it with the grounding graph of a Valen-Decision-1.5 bundle, next to other question types in one request. Download the [example image](https://valen-team.github.io/cookbook/code/media/mug-counter.jpg) as `mug-counter.jpg`:
+
+```python
+from valen_sdk import Bbox, Noul, Valen
+
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
+    result = client.system_one(
+        {"messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "mug-counter.jpg"}}]}]},
+        {"mug": Bbox(instructions="The blue mug.", image=0),
+         "full": Noul(instructions="The mug has coffee in it.")},
+    )
+    mug = result.bboxes["mug"]
+    print(mug.bbox, mug.point, mug.confidence)
+    print(result.nouls["full"].noul)
+```
+
+Decisions requests use `{"name": "mug", "type": "bbox", "instructions": "The blue mug.", "image": 0}` and return `BboxAnswer` through `result.by_name("mug")`. `image` is the zero-based index of the image to search. See [bbox questions](https://valen-team.github.io/docs/valen/onnx/#bbox-questions) for measured output.
 
 ## Compare with an LLM
 
@@ -173,7 +194,7 @@ LLM probabilities are the model's stated estimates, not Valen's candidate scores
 
 ## CUDA
 
-In a separate environment, install `python -m pip install ".[cuda]"`, then select the CUDA variant:
+In a separate environment, install `python -m pip install ".[cuda]"`, then select the CUDA variant. `cuda-fp16` is provided by the Valen-Decision-1.0 ONNX repos:
 
 ```python
 from valen_sdk import Valen
@@ -197,7 +218,7 @@ After downloading the model, run from the cache offline:
 ```python
 from valen_sdk import Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", local_files_only=True) as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", local_files_only=True) as client:
     result = client.decisions(
         input="Please send my order to my new address.",
         questions=[{"name": "change_address", "type": "predicate",
@@ -206,11 +227,11 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", local_files_only=True) as client:
     print(result.by_name("change_address").probability)
 ```
 
-You can also pass a local directory, such as `Valen.local("./models/Valen-0.8B-ONNX")`.
+You can also pass a local directory, such as `Valen.local("./models/Valen-Decision-1.5-0.8B-ONNX")`.
 
 | Option | Use |
 | --- | --- |
-| `variant` | CPU default `fp32`; `q8-mlp` for lower memory; `cuda-fp16` for CUDA |
+| `variant` | CPU default `fp32`; `q8-mlp` for a smaller download; `cuda-fp16` for CUDA with the Valen-Decision-1.0 repos |
 | `cache_dir` / `revision` | Choose a cache location or HF model revision |
 | `num_threads` | CPU inference threads, default 4 |
 | `execution` | Default `shared_state` shares one forward pass within a request; `question` compiles each question separately |

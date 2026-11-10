@@ -1,3 +1,9 @@
+# 0.5.0 — 2026-11-10
+
+- Run Valen-Decision-1.5 ONNX bundles with `Valen.local`: the compiler records the state prefix and question blocks, and the decision graph receives the block attention mask (`block_mask`) the model was trained with. Outputs match the native model; Valen-Decision-1.0 bundles run as before.
+- Add `bbox` questions: `Bbox` in typed requests, `BboxAnswer` with `bbox`, `point` and `confidence` in responses, for Decisions and SystemOne. Local inference answers them with the bundle's grounding graph; `Valen.remote` passes them through to servers that answer them.
+- A Noul rubric (`criteria` with `true` and `false`) is folded into the instructions for Valen-Decision-1.5, as in the native model.
+
 # 0.4.0 — 2026-10-31
 
 - Validate typed answers against request names, kinds, candidates and finite probability distributions. Raw `predict` remains available. Malformed responses previously accepted now fail explicitly.

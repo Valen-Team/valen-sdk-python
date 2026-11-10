@@ -61,6 +61,15 @@ def validate_response(request, response):
             key = "probability" if public else "noul"
             number(answer.get(key), path + "." + key, 0, 1)
             continue
+        if kind == "bbox":
+            for key, size in (("bbox", 4), ("point", 2)):
+                values = answer.get(key)
+                if not isinstance(values, list) or len(values) != size:
+                    fail(path + "." + key, f"expected {size} numbers")
+                for value in values:
+                    number(value, path + "." + key, 0, 1)
+            number(answer.get("confidence"), path + ".confidence", 0, 1)
+            continue
         criteria = q.get("criteria", {})
         keys = ([c["value"] for c in q["choices"]] if kind == "choice" else
                 [c["label"] for c in q["levels"]]) if public else (
@@ -132,6 +141,11 @@ def validate_request(request):
             fail(path + ".instructions", "expected nonempty text")
         kind = q.get("type")
         if kind == ("predicate" if public else "noul"):
+            continue
+        if kind == "bbox":
+            image = q.get("image", 0)
+            if type(image) is not int or image < 0:
+                fail(path + ".image", "expected a nonnegative image index")
             continue
         if kind not in {"choice", "score"}:
             fail(path + ".type", "unsupported question type; use raw predict for extensions")

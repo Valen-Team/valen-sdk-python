@@ -127,6 +127,8 @@ class LLMBackend:
             raise RuntimeError("Valen client is closed")
         public = "input" in body
         request = to_internal(body, allow_video=True) if public else body
+        if any(q.get("type") == "bbox" for q in request["questions"].values()):
+            raise ValueError("Unsupported question type: bbox")
         questions = {
             qid: SimpleNamespace(
                 kind=q["type"],

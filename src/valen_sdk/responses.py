@@ -35,3 +35,25 @@ def from_probabilities(question, probs):
         uniform_mad = sum(abs(i - (len(probs) - 1) / 2) for i in range(len(probs))) / len(probs)
         result["confidence"] = max(0.0, 1.0 - distance / uniform_mad)
     return result
+
+
+def box(logits, distances, grid):
+    """bbox answer from the grounding graph: per-token logits and edge distances in cell units."""
+    import numpy as np
+
+    rows, cols = grid
+    cy, cx = np.meshgrid((np.arange(rows, dtype=np.float32) + 0.5) / rows,
+                         (np.arange(cols, dtype=np.float32) + 0.5) / cols, indexing="ij")
+    cx, cy = cx.reshape(-1), cy.reshape(-1)
+    d = np.asarray(distances, dtype=np.float32) * np.asarray([1 / cols, 1 / rows, 1 / cols, 1 / rows], dtype=np.float32)
+    boxes = np.stack((cx - d[:, 0], cy - d[:, 1], cx + d[:, 2], cy + d[:, 3]), -1).clip(0, 1)
+    scores = np.asarray(logits, dtype=np.float32)
+    probabilities = np.exp(scores - scores.max())
+    probabilities /= probabilities.sum()
+    index = int(probabilities.argmax())
+    best = boxes[index]
+    inside = (cx >= best[0]) & (cx <= best[2]) & (cy >= best[1]) & (cy <= best[3])
+    confidence = float(probabilities[inside].sum()) if inside.any() else float(probabilities[index])
+    x1, y1, x2, y2 = (round(float(v), 4) for v in best)
+    return {"type": "bbox", "bbox": [x1, y1, x2, y2], "point": [round((x1 + x2) / 2, 4), round((y1 + y2) / 2, 4)],
+            "confidence": round(min(max(confidence, 0.0), 1.0), 4)}

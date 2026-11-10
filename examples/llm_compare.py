@@ -23,7 +23,7 @@ QUESTIONS = {
 }
 
 clients = {
-    "Valen 2B": Valen.remote("https://api.valen-team.workers.dev/v1", model="valen-2b"),
+    "Valen-Decision-1.5 2B": Valen.remote("https://api.valen-team.workers.dev/v1", model="valen-2b"),
     "gpt-4o-mini": Valen.llm("openai", "gpt-4o-mini"),
 }
 agree = 0
@@ -36,7 +36,7 @@ for ticket in TICKETS:
         seconds = time.perf_counter() - started
         queue = result.choices["queue"]
         queues.append(queue.choice)
-        print(f"  {name:12} queue={queue.choice:10} confidence={queue.confidence:.2f} "
+        print(f"  {name:21} queue={queue.choice:10} confidence={queue.confidence:.2f} "
               f"refund={result.nouls['refund'].noul:.2f} tokens={result.usage.input_tokens} {seconds:.2f}s")
     agree += len(set(queues)) == 1
 print(f"Queue agreement: {agree}/{len(TICKETS)}")

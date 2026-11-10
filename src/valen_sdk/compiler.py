@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import hashlib
 import numpy as np
-from .schema import candidates, target_distribution
+from .schema import candidates, fold_noul_criteria, target_distribution
 from .data_types import QuestionSpec
 
 
@@ -16,6 +16,12 @@ class Branch:
     context_span: tuple | None = None
     instruction_span: tuple | None = None
     candidate_spans: list | None = None
+    # Valen-Decision-1.5: per-token block ids of the shared sequence (-1 state, 0 glue, 1.. questions).
+    segments: np.ndarray | None = None
+    # bbox questions: 1-based ids of the bbox blocks, and the referenced image's tokens and (rows, cols).
+    bbox_segments: tuple | None = None
+    image_positions: np.ndarray | None = None
+    image_grid: tuple | None = None
 
 
 @dataclass(init=False)
@@ -39,10 +45,11 @@ class CompiledState:
 
 class Compiler:
     def __init__(self, processor, media_root=".", max_length=8192, media_kwargs=None, verified_media_hashes=None,
-                 execution="question"):
+                 execution="question", decision_version="1.0"):
         if execution not in {"question", "shared_state"}:
             raise ValueError(f"Unknown qwen_execution: {execution}")
         self.execution = execution
+        self.decision_version = decision_version
         self.processor = processor
         self.tokenizer = processor.tokenizer
         self.media_root = Path(media_root)
@@ -86,6 +93,8 @@ class Compiler:
     def compile(self, record, rng=None, labeled_only=False):
         selected = []
         for qid, question in record["request"]["questions"].items():
+            if self.decision_version == "1.5":
+                question = fold_noul_criteria(question)
             pairs = candidates(question)
             target = record.get("targets", {}).get(qid)
             if labeled_only and self.execution == "question" and target_distribution(target, [k for k, _ in pairs]) is None:
@@ -127,6 +136,8 @@ class Compiler:
         logical_tokens, compute_tokens = base_length, 0
         compiled = []
         for qid, question, pairs, target in selected:
+            if question["type"] == "bbox":
+                raise ValueError("bbox questions require shared_state execution")
             keys = [k for k, _ in pairs]
             branches = []
             groups = [[pair] for pair in pairs] if question["type"] == "score" else [pairs]
@@ -177,6 +188,21 @@ class Compiler:
                                      target_distribution(target, keys), not media))
         return CompiledState(compiled, logical_tokens, compute_tokens, media)
 
+    def _image_tokens(self, base):
+        """Token positions and (rows, cols) of every image, in input order."""
+        if "image_grid_thw" not in base:
+            return []
+        merge = self.processor.config["image_processor"]["merge_size"]
+        positions = np.flatnonzero(base["mm_token_type_ids"][0] == 1)
+        result, offset = [], 0
+        for t, h, w in base["image_grid_thw"].tolist():
+            rows, cols = h // merge, w // merge
+            result.append((positions[offset:offset + t * rows * cols], (rows, cols)))
+            offset += t * rows * cols
+        if offset != len(positions):
+            raise ValueError("Image token count does not match image_grid_thw")
+        return result
+
     def _compile_shared(self, selected, base, media, labeled_only=False):
         """All schemas precede all readouts; labels and external IDs never enter inputs.
 
@@ -184,15 +210,19 @@ class Compiler:
         No answer tokens or LM output layer are required by the decision heads.
         """
         base_length = base["input_ids"].shape[1]
-        suffix, compiled = [], []
+        suffix, compiled, segments = [], [], []
+        images = self._image_tokens(base)
 
-        def append(text, span=None):
+        def append(text, span=None, segment=0):
             start = base_length + len(suffix)
             if span is None:
-                suffix.extend(self.tokenizer.encode(text, add_special_tokens=False))
+                ids = self.tokenizer.encode(text, add_special_tokens=False)
+                suffix.extend(ids)
+                segments.extend([segment] * len(ids))
                 return None
             encoded = self.tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
             suffix.extend(encoded["input_ids"])
+            segments.extend([segment] * len(encoded["input_ids"]))
             indices = [i for i, (a, b) in enumerate(encoded["offset_mapping"]) if a < span[1] and b > span[0]]
             if not indices:
                 raise ValueError("Empty token span for decision role")
@@ -204,24 +234,34 @@ class Compiler:
                 if any(t in value for t in self.tokenizer.all_special_tokens):
                     raise ValueError("Reserved tokenizer control token in question/criteria")
             prefix = f"Question {index + 1}\nTask: {question['type']}\nQuestion: "
-            instruction = append(prefix + question["instructions"] + "\nCandidates:\n",
-                                 (len(prefix), len(prefix) + len(question["instructions"])))
+            block = index + 1
             positions, spans = [], []
-            for key, description in pairs:
-                prefix = key + ": " if question["type"] != "score" else ""
-                spans.append(append(prefix + description, (len(prefix), len(prefix) + len(description))))
-                positions.append(base_length + len(suffix) - 1)
-                append("\n")
+            if question["type"] == "bbox":
+                image = question.get("image", 0)
+                if image >= len(images):
+                    raise ValueError(f"{qid}: bbox refers to image {image}, state has {len(images)}")
+                instruction = append(prefix + question["instructions"] + f"\nImage: {image + 1}\n",
+                                     (len(prefix), len(prefix) + len(question["instructions"])), block)
+            else:
+                instruction = append(prefix + question["instructions"] + "\nCandidates:\n",
+                                     (len(prefix), len(prefix) + len(question["instructions"])), block)
+                for key, description in pairs:
+                    prefix = key + ": " if question["type"] != "score" else ""
+                    spans.append(append(prefix + description, (len(prefix), len(prefix) + len(description)), block))
+                    positions.append(base_length + len(suffix) - 1)
+                    append("\n", segment=block)
             # Inputs and the decision position are filled after all schemas are appended.
             branch = Branch({}, positions, -1, (0, base_length), instruction, spans)
+            if question["type"] == "bbox":
+                branch.image_positions, branch.image_grid = images[image]
             keys = [key for key, _ in pairs]
             compiled.append(Question(qid, question["type"], keys, [v for _, v in pairs], [branch],
                                      target_distribution(target, keys), not media))
         append("<|im_end|>\n<|im_start|>assistant\n")
         for index, question in enumerate(compiled):
-            append(f"Question {index + 1} Decision:")
+            append(f"Question {index + 1} Decision:", segment=index + 1)
             question.branches[0].decision_position = base_length + len(suffix) - 1
-            append("\n")
+            append("\n", segment=index + 1)
         length = base_length + len(suffix)
         if length > self.max_length:
             raise ValueError(f"Shared state: {length} tokens exceed max_length={self.max_length}; no truncation")
@@ -230,8 +270,12 @@ class Compiler:
         inputs["attention_mask"] = np.concatenate([base["attention_mask"], np.ones((1, len(suffix)), dtype=np.int64)], axis=1)
         if "mm_token_type_ids" in base:
             inputs["mm_token_type_ids"] = np.concatenate([base["mm_token_type_ids"], np.zeros((1, len(suffix)), dtype=np.int64)], axis=1)
+        row_segments = np.asarray([-1] * base_length + segments, dtype=np.int64)
+        bbox_segments = tuple(i + 1 for i, q in enumerate(compiled) if q.kind == "bbox")
         for question in compiled:
             question.branches[0].inputs = inputs
+            question.branches[0].segments = row_segments
+            question.branches[0].bbox_segments = bbox_segments
         if labeled_only:
             compiled = [question for question in compiled if question.target is not None]
         return CompiledState(compiled, length, length, media, inputs)

@@ -23,6 +23,12 @@ class Score(BaseModel):
     criteria: list[str]
 
 
+class Bbox(BaseModel):
+    type: Literal["bbox"] = "bbox"
+    instructions: str
+    image: int = Field(default=0, ge=0)
+
+
 class Usage(BaseModel):
     model_config = ConfigDict(extra="allow")
     input_tokens: int | None = None
@@ -62,10 +68,18 @@ class ScoreAnswer(BaseModel):
     confidence: float = Field(ge=0, le=1, allow_inf_nan=False)
 
 
+class BboxAnswer(BaseModel):
+    name: str
+    type: Literal["bbox"]
+    bbox: list[float] = Field(min_length=4, max_length=4)
+    point: list[float] = Field(min_length=2, max_length=2)
+    confidence: float = Field(ge=0, le=1, allow_inf_nan=False)
+
+
 class DecisionResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
     model: str
-    answers: list[ChoiceAnswer | PredicateAnswer | ScoreAnswer]
+    answers: list[ChoiceAnswer | PredicateAnswer | ScoreAnswer | BboxAnswer]
     usage: Usage
     internal_usage: dict[str, Any] | None = None
 
@@ -78,8 +92,10 @@ class DecisionResponse(BaseModel):
 
 class SystemOneAnswer(BaseModel):
     model_config = ConfigDict(extra="allow")
-    type: Literal["choice", "noul", "score"]
+    type: Literal["choice", "noul", "score", "bbox"]
     choice: str | None = None
+    bbox: list[float] | None = None
+    point: list[float] | None = None
     noul: float | None = None
     score: float | None = None
     confidence: float | None = None
@@ -90,7 +106,8 @@ class SystemOneAnswer(BaseModel):
     def required_answer_fields(self):
         import math
         required = {"choice": ("choice", "probabilities", "confidence"),
-                    "noul": ("noul",), "score": ("score", "probabilities", "confidence", "legend")}[self.type]
+                    "noul": ("noul",), "score": ("score", "probabilities", "confidence", "legend"),
+                    "bbox": ("bbox", "point", "confidence")}[self.type]
         for field in required:
             if getattr(self, field) is None:
                 raise ValueError(f"{self.type} answer requires {field}")
@@ -119,3 +136,7 @@ class SystemOneResponse(BaseModel):
     @property
     def scores(self):
         return {key: answer for key, answer in self.answers.items() if answer.type == "score"}
+
+    @property
+    def bboxes(self):
+        return {key: answer for key, answer in self.answers.items() if answer.type == "bbox"}

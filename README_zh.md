@@ -16,21 +16,21 @@
 
 [Valen（万澜）](https://github.com/Valen-Team/Valen) 是多模态 System One 决策模型，面向给定任务输出结构化决策概率。本仓库提供 Valen 的 Python SDK。
 
-在自己的 Python 应用中处理文本、图片和视频，获取可直接用于工单路由、内容筛选与排序的类别、是非概率和评分。支持 CPU 本地推理、NVIDIA CUDA 和远程 HTTP 调用；本地推理使用 ONNX Runtime，无需安装 PyTorch 或 Transformers。
+在自己的 Python 应用中处理文本、图片和视频，获取可直接用于工单路由、内容筛选与排序的类别、是非概率和评分。支持 CPU 本地推理、NVIDIA CUDA 和远程 HTTP 调用；本地推理使用 ONNX Runtime，无需安装 PyTorch 或 Transformers。`Valen.remote` 连接托管 API 时，模型 ID `valen-0.8b`、`valen-2b`、`valen-4b` 对应 Valen-Decision-1.5 的 0.8B、2B、4B；`Valen.local` 运行 Valen-Decision-1.5 的 ONNX 模型包（`Valen-Decision-1.5-0.8B-ONNX`、`2B`、`4B`、`9B`、`27B`），结果与原生模型一致，并可回答 `bbox` 问题；也运行 Valen-Decision-1.0 的 ONNX 模型（`Valen-0.8B-ONNX`、`Valen-2B-ONNX`、`Valen-4B-ONNX`）。
 
 ## 完整应用教程
 
 完整业务流程只在[官网 Cookbook](https://valen-team.github.io/zh-Hans/cookbook/)维护：[工单分流](https://valen-team.github.io/zh-Hans/cookbook/ticket-routing/)、[候选项都不对](https://valen-team.github.io/zh-Hans/cookbook/unknown-categories/)、[商品图片筛选](https://valen-team.github.io/zh-Hans/cookbook/product-screening/)、[短视频标注](https://valen-team.github.io/zh-Hans/cookbook/video-tagging/)。代码、样例和实测结果来自同一维护源。本仓库保留 SDK 接口与安装示例；`Valen.local` 是 ONNX 路径，GGUF 服务使用远程 HTTP 客户端。C++ 集成的支持范围以本仓库说明为准。
 
 
-## 稳定版本 0.4.0
+## 稳定版本 0.5.0
 
-已正式发布到 [PyPI](https://pypi.org/project/valen-sdk/0.4.0/)。仅调用 HTTP 服务可安装基础包；本地 ONNX 推理安装对应 extra：
+已正式发布到 [PyPI](https://pypi.org/project/valen-sdk/0.5.0/)。仅调用 HTTP 服务可安装基础包；本地 ONNX 推理安装对应 extra：
 
 ```sh
-python -m pip install 'valen-sdk==0.4.0'
+python -m pip install 'valen-sdk==0.5.0'
 # 本地 CPU 推理，Python 3.11+
-python -m pip install 'valen-sdk[onnx]==0.4.0'
+python -m pip install 'valen-sdk[onnx]==0.5.0'
 ```
 
 0.2.0 的 [GitHub 发布包](https://github.com/Valen-Team/valen-sdk-python/releases/tag/v0.2.0)继续保留。PyPI 通过 GitHub Trusted Publishing 发布，无需长期 PyPI token；见[发布说明](RELEASING.md)。JavaScript SDK 的 npm 发布状态单独管理。
@@ -42,30 +42,30 @@ python -m pip install 'valen-sdk[onnx]==0.4.0'
 以下仓库示例需要 Python 3.11+ 和 Git，使用 CPU，无需 GPU；直接安装 PyPI wheel 本身不需要 Git：
 
 ```bash
-git clone --branch v0.4.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
+git clone --branch v0.5.0 --depth 1 https://github.com/valen-team/valen-sdk-python.git
 cd valen-sdk-python
 python -m pip install ".[onnx]"
 python examples/local_decisions.py
 ```
 
-最短协议调用如下，完整分流、阈值和排序见 Cookbook：
+使用 Valen-Decision-1.5 的最短协议调用如下（`examples/` 中的脚本加载 Valen-Decision-1.0 0.8B 模型包），完整分流、阈值和排序见 Cookbook：
 
 ```python
 from valen_sdk import Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
     result = client.decisions(input="A cat is on the sofa.", questions=[
         {"name": "cat", "type": "predicate", "instructions": "A cat is present."},
     ])
     print(result.by_name("cat").probability)
 ```
 
-首次使用会下载所选模型变体并缓存；0.8B FP32 完整下载约 3.51 GB。后续运行复用缓存。模型选择、下载量和实测内存见 [0.8B](https://huggingface.co/Valen-Team/Valen-0.8B-ONNX)、[2B](https://huggingface.co/Valen-Team/Valen-2B-ONNX)、[4B](https://huggingface.co/Valen-Team/Valen-4B-ONNX) 模型卡。
+首次使用会下载所选模型变体并缓存；0.8B FP32 完整下载约 3.52 GB。后续运行复用缓存。模型选择和下载量见 Valen-Decision-1.5 的 [0.8B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-0.8B-ONNX)、[2B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-2B-ONNX)、[4B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-4B-ONNX)、[9B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-9B-ONNX)、[27B](https://huggingface.co/Valen-Team/Valen-Decision-1.5-27B-ONNX) 模型卡，各变体体积及与原生模型的对比见 [ONNX 指南](https://valen-team.github.io/zh-Hans/docs/valen/onnx/#模型与变体)。
 
 在自己的项目中，可直接安装 SDK：
 
 ```bash
-python -m pip install "valen-sdk[onnx]==0.4.0"
+python -m pip install "valen-sdk[onnx]==0.5.0"
 ```
 
 ## 图片和视频
@@ -78,7 +78,7 @@ python -m pip install "valen-sdk[onnx]==0.4.0"
 
 ```bash
 python -m pip install ".[onnx,server]"
-valen serve --model Valen-Team/Valen-0.8B-ONNX --model-name valen --port 8000
+valen serve --model Valen-Team/Valen-Decision-1.5-0.8B-ONNX --model-name valen --port 8000
 ```
 
 另开一个终端运行 `python examples/http_client.py`，或在应用中调用：
@@ -104,7 +104,7 @@ Decisions 使用问题列表；SystemOne 使用以问题 ID 为键的字典。�
 ```python
 from valen_sdk import Choice, Noul, Score, Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
     result = client.system_one(
         "I moved. Please ship my order to 12 Elm Street instead.",
         {
@@ -119,6 +119,27 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
     print(f"Address change probability: {result.answers['change_address'].noul:.3f}")
     print(f"Explicitness score (0–2): {result.answers['explicitness'].score:.3f}")
 ```
+
+## Bbox 问题
+
+`bbox` 问题在图片中定位目标，返回 `bbox` `[x1, y1, x2, y2]`、`point` `[x, y]` 和 `confidence`，坐标归一化到 0–1。本地推理通过 Valen-Decision-1.5 模型包中的 grounding 图回答，可与其他题型放在同一请求中。先将[示例图片](https://valen-team.github.io/cookbook/code/media/mug-counter.jpg)下载为 `mug-counter.jpg`：
+
+```python
+from valen_sdk import Bbox, Noul, Valen
+
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
+    result = client.system_one(
+        {"messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "mug-counter.jpg"}}]}]},
+        {"mug": Bbox(instructions="The blue mug.", image=0),
+         "full": Noul(instructions="The mug has coffee in it.")},
+    )
+    mug = result.bboxes["mug"]
+    print(mug.bbox, mug.point, mug.confidence)
+    print(result.nouls["full"].noul)
+```
+
+Decisions 请求使用 `{"name": "mug", "type": "bbox", "instructions": "The blue mug.", "image": 0}`，通过 `result.by_name("mug")` 取得 `BboxAnswer`。`image` 是待定位图片从 0 开始的序号。实测输出见 [Bbox 问题](https://valen-team.github.io/zh-Hans/docs/valen/onnx/#bbox-问题)。
 
 ## 与大模型对比
 
@@ -152,7 +173,7 @@ for client in (valen, llm):
 
 ## CUDA
 
-在独立环境中安装 `python -m pip install ".[cuda]"`，然后使用 CUDA 变体：
+在独立环境中安装 `python -m pip install ".[cuda]"`，然后使用 CUDA 变体。`cuda-fp16` 由 Valen-Decision-1.0 ONNX 仓库提供：
 
 ```python
 from valen_sdk import Valen
@@ -176,7 +197,7 @@ with Valen.local(
 ```python
 from valen_sdk import Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", local_files_only=True) as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", local_files_only=True) as client:
     result = client.decisions(
         input="Please send my order to my new address.",
         questions=[{"name": "change_address", "type": "predicate",
@@ -185,11 +206,11 @@ with Valen.local("Valen-Team/Valen-0.8B-ONNX", local_files_only=True) as client:
     print(result.by_name("change_address").probability)
 ```
 
-模型参数也可传入本地目录，如 `Valen.local("./models/Valen-0.8B-ONNX")`。
+模型参数也可传入本地目录，如 `Valen.local("./models/Valen-Decision-1.5-0.8B-ONNX")`。
 
 | 参数 | 用途 |
 | --- | --- |
-| `variant` | CPU 默认 `fp32`；节省内存选 `q8-mlp`；CUDA 选 `cuda-fp16` |
+| `variant` | CPU 默认 `fp32`；下载体积更小选 `q8-mlp`；CUDA 选 Valen-Decision-1.0 仓库的 `cuda-fp16` |
 | `cache_dir` / `revision` | 指定缓存位置或 HF 模型版本 |
 | `num_threads` | CPU 推理线程数，默认 4 |
 | `execution` | 默认 `shared_state`，同一请求中的问题共享一次前向；`question` 为每个问题单独编译 |

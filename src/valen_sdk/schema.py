@@ -9,6 +9,12 @@ def candidates(question):
     if not isinstance(question.get("instructions"), str) or not question["instructions"].strip():
         raise ValueError("instructions must be nonempty text")
     criteria = question.get("criteria")
+    if kind == "bbox":
+        # Localization has no candidates; the image tokens are the choices.
+        image = question.get("image", 0)
+        if type(image) is not int or image < 0:
+            raise ValueError("bbox image must be a nonnegative image index")
+        return []
     if kind == "noul":
         return [("true", "True / 是：满足问题中的条件。"), ("false", "False / 否：不满足问题中的条件。")]
     if kind == "choice":
@@ -25,6 +31,19 @@ def candidates(question):
     if any(not isinstance(k, str) or not k or not isinstance(v, str) or not v.strip() for k, v in result):
         raise ValueError("Candidate names and descriptions must be nonempty strings")
     return result
+
+
+def fold_noul_criteria(question):
+    """Valen-Decision-1.5 reads a Noul rubric from the instructions, as its training data does."""
+    criteria = question.get("criteria")
+    if question.get("type") != "noul" or not criteria:
+        return question
+    if not isinstance(criteria, dict) or set(criteria) != {"true", "false"}:
+        raise ValueError("Noul criteria must define true and false")
+    question = {k: v for k, v in question.items() if k != "criteria"}
+    question["instructions"] = (question["instructions"] + "\nTrue criterion: " + str(criteria["true"])
+                                + "\nFalse criterion: " + str(criteria["false"]))
+    return question
 
 
 def target_distribution(target, keys):
