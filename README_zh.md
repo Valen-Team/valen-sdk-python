@@ -173,13 +173,13 @@ for client in (valen, llm):
 
 ## CUDA
 
-在独立环境中安装 `python -m pip install ".[cuda]"`，然后使用 CUDA 变体。`cuda-fp16` 由 Valen-Decision-1.0 ONNX 仓库提供：
+在独立环境中安装 `python -m pip install ".[cuda]"`，然后使用 CUDA 变体。0.8B 到 27B 的每个 Valen-Decision-1.5 模型包都包含 `cuda-fp16`：
 
 ```python
 from valen_sdk import Valen
 
 with Valen.local(
-    "Valen-Team/Valen-0.8B-ONNX", variant="cuda-fp16",
+    "Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="cuda-fp16",
     providers=[("CUDAExecutionProvider", {"use_tf32": "0"}), "CPUExecutionProvider"],
 ) as client:
     result = client.decisions(
@@ -210,7 +210,7 @@ with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", local_files_only=Tru
 
 | 参数 | 用途 |
 | --- | --- |
-| `variant` | CPU 默认 `fp32`；下载体积更小选 `q8-mlp`；CUDA 选 Valen-Decision-1.0 仓库的 `cuda-fp16` |
+| `variant` | CPU 默认 `fp32`；下载体积更小选 `q8-mlp`；CUDA 选 `cuda-fp16` |
 | `cache_dir` / `revision` | 指定缓存位置或 HF 模型版本 |
 | `num_threads` | CPU 推理线程数，默认 4 |
 | `execution` | 默认 `shared_state`，同一请求中的问题共享一次前向；`question` 为每个问题单独编译 |

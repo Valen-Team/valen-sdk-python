@@ -194,13 +194,13 @@ LLM probabilities are the model's stated estimates, not Valen's candidate scores
 
 ## CUDA
 
-In a separate environment, install `python -m pip install ".[cuda]"`, then select the CUDA variant. `cuda-fp16` is provided by the Valen-Decision-1.0 ONNX repos:
+In a separate environment, install `python -m pip install ".[cuda]"`, then select the CUDA variant. Every Valen-Decision-1.5 bundle, 0.8B to 27B, includes `cuda-fp16`:
 
 ```python
 from valen_sdk import Valen
 
 with Valen.local(
-    "Valen-Team/Valen-0.8B-ONNX", variant="cuda-fp16",
+    "Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="cuda-fp16",
     providers=[("CUDAExecutionProvider", {"use_tf32": "0"}), "CPUExecutionProvider"],
 ) as client:
     result = client.decisions(
@@ -231,7 +231,7 @@ You can also pass a local directory, such as `Valen.local("./models/Valen-Decisi
 
 | Option | Use |
 | --- | --- |
-| `variant` | CPU default `fp32`; `q8-mlp` for a smaller download; `cuda-fp16` for CUDA with the Valen-Decision-1.0 repos |
+| `variant` | CPU default `fp32`; `q8-mlp` for a smaller download; `cuda-fp16` for CUDA |
 | `cache_dir` / `revision` | Choose a cache location or HF model revision |
 | `num_threads` | CPU inference threads, default 4 |
 | `execution` | Default `shared_state` shares one forward pass within a request; `question` compiles each question separately |
