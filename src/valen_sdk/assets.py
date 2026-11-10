@@ -1,6 +1,7 @@
 """Selective model downloads through the mature Hugging Face cache."""
 
 import json
+import os
 from pathlib import Path
 from .errors import ModelCompatibilityError
 from .manifest import validate_asset_path
@@ -55,4 +56,22 @@ def resolve_directory(model, *, revision=None, local_files_only=False, cache_dir
     if missing:
         raise ModelCompatibilityError("Missing model assets: " + ", ".join(missing) + "; download the selected revision and variant again")
     _emit(on_event, event="resolve_complete", backend="local", variant=variant)
-    return directory
+    return _real_files(directory)
+
+
+def _real_files(directory):
+    """Mirror a Hub cache snapshot as hard links next to it.
+
+    Snapshot files are symlinks into ``blobs/``; ONNX Runtime rejects external data whose resolved path
+    leaves the graph's directory, so graphs load from a mirror of real files sharing the same blobs.
+    """
+    files = [path for path in directory.rglob("*") if path.is_file()]
+    if not any(path.is_symlink() for path in files):
+        return directory
+    mirror = directory.parent.parent / "valen-onnx" / directory.name
+    for path in files:
+        target = mirror / path.relative_to(directory)
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            os.link(path.resolve(), target)
+    return mirror

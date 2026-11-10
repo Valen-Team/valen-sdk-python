@@ -1,7 +1,7 @@
 """Use SystemOne with the same local ONNX model."""
 from valen_sdk import Choice, Noul, Score, Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
     result = client.system_one(
         "I moved. Please ship my order to 12 Elm Street instead.",
         {

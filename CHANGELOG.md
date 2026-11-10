@@ -1,3 +1,7 @@
+# 0.5.1 — 2026-11-11
+
+- `Valen.local("Valen-Team/...")` loads bundles from the Hugging Face cache with ONNX Runtime 1.31: the snapshot is mirrored as hard links in `valen-onnx/<revision>/` next to it, so every graph and its external weights sit in one real directory. Files are shared with the cache, so no extra disk space is used. Local directories load as before.
+
 # 0.5.0 — 2026-11-10
 
 - Run Valen-Decision-1.5 ONNX bundles with `Valen.local`: the compiler records the state prefix and question blocks, and the decision graph receives the block attention mask (`block_mask`) the model was trained with. Outputs match the native model; Valen-Decision-1.0 bundles run as before.

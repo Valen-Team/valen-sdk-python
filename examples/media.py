@@ -17,7 +17,7 @@ question = {
     "name": "animal", "type": "choice", "instructions": "Which animals are shown?",
     "choices": [{"value": "sheep", "description": "Sheep"}, {"value": "dogs", "description": "Dogs"}],
 }
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32", media_kwargs={
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32", media_kwargs={
     "videos_kwargs": {"num_frames": 4, "fps": None},
 }) as client:
     result = client.decisions(input=[{"role": "user", "content": [part]}], questions=[question])

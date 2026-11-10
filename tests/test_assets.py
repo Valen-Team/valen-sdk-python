@@ -46,3 +46,22 @@ def test_existing_read_only_directory_and_missing_explicit_path(tmp_path):
     assert resolve_directory(tmp_path, local_files_only=True) == tmp_path
     with pytest.raises(ModelCompatibilityError, match='does not exist'):
         resolve_directory(tmp_path / 'missing')
+
+
+def test_hub_snapshot_symlinks_become_hard_links(tmp_path):
+    from valen_sdk.assets import _real_files
+    repo = tmp_path / "models--owner--model"
+    (repo / "blobs").mkdir(parents=True)
+    snapshot = repo / "snapshots" / "abc123"
+    (snapshot / "onnx").mkdir(parents=True)
+    for name, data in [("onnx/embedding.onnx", b"graph"), ("onnx/embedding.data", b"weights")]:
+        blob = repo / "blobs" / name.replace("/", "-")
+        blob.write_bytes(data)
+        (snapshot / name).symlink_to(blob)
+    mirror = _real_files(snapshot)
+    assert mirror == repo / "valen-onnx" / "abc123"
+    for name in ["onnx/embedding.onnx", "onnx/embedding.data"]:
+        assert not (mirror / name).is_symlink()
+        assert (mirror / name).samefile(snapshot / name)
+    assert _real_files(snapshot) == mirror
+    assert _real_files(mirror) == mirror

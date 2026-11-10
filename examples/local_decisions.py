@@ -1,7 +1,7 @@
 """Run three decisions on CPU; the SDK downloads and caches the model."""
 from valen_sdk import Valen
 
-with Valen.local("Valen-Team/Valen-0.8B-ONNX", variant="fp32") as client:
+with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as client:
     result = client.decisions(
         input="I moved. Please ship my order to 12 Elm Street instead.",
         questions=[
