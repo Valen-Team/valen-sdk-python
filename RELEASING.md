@@ -1,3 +1,5 @@
+`valen-sdk==0.5.1` was published on 2026-11-11 from `v0.5.1` through [GitHub Actions](https://github.com/Valen-Team/valen-sdk-python/actions/runs/42868311471). Public wheel SHA256 and an installed-package run that loads a Valen-Decision-1.5 bundle by Hub ID passed; see `validation/pypi-0.5.1.json`.
+
 `valen-sdk==0.5.0` was published on 2026-11-10 from `v0.5.0` through [GitHub Actions](https://github.com/Valen-Team/valen-sdk-python/actions/runs/42819313564). Public wheel SHA256 and installed-package smoke tests passed; see `validation/pypi-0.5.0.json`.
 
 `valen-sdk==0.4.0` was published on 2026-10-31 from `v0.4.0` through [GitHub Actions](https://github.com/Valen-Team/valen-sdk-python/actions/runs/41156095312). Public wheel SHA256 and installed-package smoke tests passed; see `validation/pypi-0.4.0.json`.
