@@ -16,7 +16,7 @@
 
 [Valen](https://github.com/Valen-Team/Valen) is a multimodal System One decision model that returns structured decision probabilities for your tasks. This repository provides the Python SDK for Valen.
 
-Run text, image and video decisions inside your Python application. Get categories, yes/no probabilities and scores for ticket routing, content screening and ranking. Use local CPU inference, NVIDIA CUDA or a remote HTTP service. Local inference uses ONNX Runtime without PyTorch or Transformers. `Valen.remote` on the hosted API reaches Valen-Decision-1.5 0.8B, 2B and 4B through the model IDs `valen-0.8b`, `valen-2b` and `valen-4b`; `Valen.local` runs the Valen-Decision-1.5 ONNX bundles (`Valen-Decision-1.5-0.8B-ONNX`, `2B`, `4B`, `9B`, `27B`) with results that match the native model, answers `bbox` questions with them, and runs the Valen-Decision-1.0 ONNX models (`Valen-0.8B-ONNX`, `Valen-2B-ONNX`, `Valen-4B-ONNX`).
+Run text, image and video decisions inside your Python application. Get categories, yes/no probabilities and scores for ticket routing, content screening and ranking. Use local CPU inference, NVIDIA CUDA or a remote HTTP service. Local inference uses ONNX Runtime without PyTorch or Transformers. `Valen.remote` on the hosted API reaches Valen-Decision-1.5 0.8B, 2B and 4B through the model IDs `valen-0.8b`, `valen-2b` and `valen-4b`, `bbox` questions included; `Valen.local` runs the Valen-Decision-1.5 ONNX bundles (`Valen-Decision-1.5-0.8B-ONNX`, `2B`, `4B`, `9B`, `27B`) with results that match the native model, answers `bbox` questions with them, and runs the Valen-Decision-1.0 ONNX models (`Valen-0.8B-ONNX`, `Valen-2B-ONNX`, `Valen-4B-ONNX`).
 
 ## Reliability and integration controls
 
@@ -143,7 +143,7 @@ with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as c
 
 ## Bbox questions
 
-A `bbox` question locates something in an image and returns `bbox` `[x1, y1, x2, y2]`, `point` `[x, y]` and `confidence`, normalized to 0–1. Local inference answers it with the grounding graph of a Valen-Decision-1.5 bundle, next to other question types in one request. Download the [example image](https://valen-team.github.io/cookbook/code/media/mug-counter.jpg) as `mug-counter.jpg`:
+A `bbox` question locates something in an image and returns `bbox` `[x1, y1, x2, y2]`, `point` `[x, y]` and `confidence`, normalized to 0–1. Local inference answers it with the grounding graph of a Valen-Decision-1.5 bundle, next to other question types in one request. `Valen.remote` sends the same question to the hosted API or another Valen-Decision-1.5 service. Download the [example image](https://valen-team.github.io/cookbook/code/media/mug-counter.jpg) as `mug-counter.jpg`:
 
 ```python
 from valen_sdk import Bbox, Noul, Valen

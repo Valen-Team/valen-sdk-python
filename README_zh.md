@@ -16,7 +16,7 @@
 
 [Valen（万澜）](https://github.com/Valen-Team/Valen) 是多模态 System One 决策模型，面向给定任务输出结构化决策概率。本仓库提供 Valen 的 Python SDK。
 
-在自己的 Python 应用中处理文本、图片和视频，获取可直接用于工单路由、内容筛选与排序的类别、是非概率和评分。支持 CPU 本地推理、NVIDIA CUDA 和远程 HTTP 调用；本地推理使用 ONNX Runtime，无需安装 PyTorch 或 Transformers。`Valen.remote` 连接托管 API 时，模型 ID `valen-0.8b`、`valen-2b`、`valen-4b` 对应 Valen-Decision-1.5 的 0.8B、2B、4B；`Valen.local` 运行 Valen-Decision-1.5 的 ONNX 模型包（`Valen-Decision-1.5-0.8B-ONNX`、`2B`、`4B`、`9B`、`27B`），结果与原生模型一致，并可回答 `bbox` 问题；也运行 Valen-Decision-1.0 的 ONNX 模型（`Valen-0.8B-ONNX`、`Valen-2B-ONNX`、`Valen-4B-ONNX`）。
+在自己的 Python 应用中处理文本、图片和视频，获取可直接用于工单路由、内容筛选与排序的类别、是非概率和评分。支持 CPU 本地推理、NVIDIA CUDA 和远程 HTTP 调用；本地推理使用 ONNX Runtime，无需安装 PyTorch 或 Transformers。`Valen.remote` 连接托管 API 时，模型 ID `valen-0.8b`、`valen-2b`、`valen-4b` 对应 Valen-Decision-1.5 的 0.8B、2B、4B，并可回答 `bbox` 问题；`Valen.local` 运行 Valen-Decision-1.5 的 ONNX 模型包（`Valen-Decision-1.5-0.8B-ONNX`、`2B`、`4B`、`9B`、`27B`），结果与原生模型一致，并可回答 `bbox` 问题；也运行 Valen-Decision-1.0 的 ONNX 模型（`Valen-0.8B-ONNX`、`Valen-2B-ONNX`、`Valen-4B-ONNX`）。
 
 ## 完整应用教程
 
@@ -122,7 +122,7 @@ with Valen.local("Valen-Team/Valen-Decision-1.5-0.8B-ONNX", variant="fp32") as c
 
 ## Bbox 问题
 
-`bbox` 问题在图片中定位目标，返回 `bbox` `[x1, y1, x2, y2]`、`point` `[x, y]` 和 `confidence`，坐标归一化到 0–1。本地推理通过 Valen-Decision-1.5 模型包中的 grounding 图回答，可与其他题型放在同一请求中。先将[示例图片](https://valen-team.github.io/cookbook/code/media/mug-counter.jpg)下载为 `mug-counter.jpg`：
+`bbox` 问题在图片中定位目标，返回 `bbox` `[x1, y1, x2, y2]`、`point` `[x, y]` 和 `confidence`，坐标归一化到 0–1。本地推理通过 Valen-Decision-1.5 模型包中的 grounding 图回答，可与其他题型放在同一请求中。`Valen.remote` 可将同样的问题发送到托管 API 或其他 Valen-Decision-1.5 服务。先将[示例图片](https://valen-team.github.io/cookbook/code/media/mug-counter.jpg)下载为 `mug-counter.jpg`：
 
 ```python
 from valen_sdk import Bbox, Noul, Valen
